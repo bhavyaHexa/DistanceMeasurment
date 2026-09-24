@@ -19,9 +19,10 @@ export const DropzoneOverlay = observer(function DropzoneOverlay() {
     multiple: false,
   });
 
-  // Hide entirely once a model is loaded — the dropzone was intercepting
-  // pointer events and preventing point dragging on the model.
-  if (model.isLoaded) return null;
+  // Hide as soon as a file has been accepted (objectUrl is set) so the
+  // loading state is visible without the dropzone overlapping it.
+  // Also hide once the model is fully loaded (isLoaded) to block pointer events.
+  if (model.objectUrl || model.isLoaded) return null;
 
   return (
     <div
