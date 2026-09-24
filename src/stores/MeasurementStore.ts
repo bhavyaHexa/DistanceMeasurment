@@ -2,6 +2,7 @@ import { makeAutoObservable, observableShallow } from 'mobx';
 import * as THREE from 'three';
 import type { Measurement, InteractionMode, LengthUnit, MeasurementKind } from '../types/measurement';
 import { makeId } from '../utils/ids';
+import { toMm } from '../utils/units';
 
 export class MeasurementStore {
   mode: InteractionMode = 'idle';
@@ -64,7 +65,10 @@ export class MeasurementStore {
       this.measurements = this.measurements.filter((m) => m.id !== this.calibrationId);
     }
 
-    this.scaleFactor = knownDistance / this.pendingCalibrationRawDistance;
+    // Convert the user-entered value from the selected unit (e.g. inches) to mm,
+    // so that scaleFactor is always in mm per scene-unit — matching formatDistance.
+    const knownDistanceInMm = toMm(knownDistance, this.unit);
+    this.scaleFactor = knownDistanceInMm / this.pendingCalibrationRawDistance;
     const measurement = this._commit('calibration', a, b, this.pendingCalibrationRawDistance);
     this.calibrationId = measurement.id;
     this.cancelPending();
