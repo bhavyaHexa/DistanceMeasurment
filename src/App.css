@@ -200,6 +200,31 @@ aside {
   color: #71717a;
 }
 
+.scale-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.scale-status__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #facc15;
+}
+
+.scale-status__value {
+  font-size: 12px;
+  color: #d4d4d8;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
 .measurement-label {
   background: rgba(0, 0, 0, 0.85);
   color: #38bdf8;
