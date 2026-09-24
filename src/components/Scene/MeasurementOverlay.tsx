@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
+import { DraggablePointMarker } from './DraggablePointMarker';
 import { PointMarker } from './PointMarker';
 import { MeasurementLine } from './MeasurementLine';
 import { MeasurementLabel } from './MeasurementLabel';
@@ -26,8 +27,19 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
 
           return (
             <group key={m.id}>
-              <PointMarker position={m.pointA} color={MEASUREMENT_COLOR} />
-              <PointMarker position={m.pointB} color={MEASUREMENT_COLOR} />
+              {/* Draggable endpoints — grab & drag to reposition on the model */}
+              <DraggablePointMarker
+                measurementId={m.id}
+                which="A"
+                position={m.pointA}
+                color={MEASUREMENT_COLOR}
+              />
+              <DraggablePointMarker
+                measurementId={m.id}
+                which="B"
+                position={m.pointB}
+                color={MEASUREMENT_COLOR}
+              />
               <MeasurementLine a={m.pointA} b={m.pointB} color={MEASUREMENT_COLOR} />
               <MeasurementLabel a={m.pointA} b={m.pointB} text={text} />
               <MeasurementDetailBox
@@ -47,6 +59,7 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
           );
         })}
 
+      {/* Pending points (non-draggable — still being placed) */}
       {measurement.pendingPoints.map((p, i) => (
         <PointMarker key={i} position={p} color={PENDING_COLOR} />
       ))}

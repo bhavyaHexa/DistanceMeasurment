@@ -15,6 +15,9 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
   useEffect(() => {
     const box = new THREE.Box3().setFromObject(gltf.scene);
     model.setLoaded(box);
+    // Store a plain (non-observable) ref to the scene so DraggablePointMarker
+    // can raycast against it without needing a React context.
+    model.setScene(gltf.scene);
 
     const center = box.getCenter(new THREE.Vector3());
     gltf.scene.position.x -= center.x;
@@ -22,6 +25,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
     gltf.scene.position.y -= box.min.y;
 
     return () => {
+      model.setScene(null);
       disposeObject3D(sceneRef.current);
     };
   }, [gltf, model]);

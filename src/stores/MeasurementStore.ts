@@ -99,6 +99,23 @@ export class MeasurementStore {
     return this.scaleFactor != null ? measurement.rawDistance * this.scaleFactor : null;
   }
 
+  /** Drag an already-committed point to a new position on the model surface. */
+  movePoint(id: string, which: 'A' | 'B', newPos: THREE.Vector3) {
+    const idx = this.measurements.findIndex((m) => m.id === id);
+    if (idx < 0) return;
+    const m = this.measurements[idx];
+    // Spread into a new object so the shallow-observed array element reference changes,
+    // which triggers MobX reactions without deep-observing THREE.Vector3 objects.
+    const updated = {
+      ...m,
+      pointA: which === 'A' ? newPos.clone() : m.pointA,
+      pointB: which === 'B' ? newPos.clone() : m.pointB,
+    };
+    updated.rawDistance = updated.pointA.distanceTo(updated.pointB);
+    // splice notifies the observable array to re-render all observers
+    this.measurements.splice(idx, 1, updated);
+  }
+
   private _commit(
     kind: MeasurementKind,
     a: THREE.Vector3,

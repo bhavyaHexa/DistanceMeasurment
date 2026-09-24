@@ -7,10 +7,13 @@ export class ModelStore {
   isLoaded = false;
   boundingBox: THREE.Box3 | null = null;
   boundingSphereRadius = 1;
+  /** Non-observable reference to the loaded GLTF scene root, used for raycasting. */
+  scene: THREE.Object3D | null = null;
 
   constructor() {
     makeAutoObservable(this, {
       boundingBox: observableRef,
+      scene: false, // plain ref — not observable, avoids MobX proxying THREE objects
     });
   }
 
@@ -26,6 +29,10 @@ export class ModelStore {
     box.getBoundingSphere(sphere);
     this.boundingSphereRadius = sphere.radius || 1;
     this.isLoaded = true;
+  }
+
+  setScene(scene: THREE.Object3D | null) {
+    this.scene = scene;
   }
 
   clear() {
