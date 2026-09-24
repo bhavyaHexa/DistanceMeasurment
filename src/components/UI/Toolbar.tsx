@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import clsx from 'clsx';
 import { useStores } from '../../stores/StoreContext';
@@ -7,9 +8,31 @@ const UNITS: LengthUnit[] = ['mm', 'cm', 'm', 'in', 'ft'];
 
 export const Toolbar = observer(function Toolbar() {
   const { measurement, model } = useStores();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) model.setFile(file);
+    // Reset so the same file can be re-selected
+    e.target.value = '';
+  };
 
   return (
     <div className="toolbar">
+      {/* Hidden file input for load/replace model */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".glb"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+
+      {/* Load / Replace model button */}
+      <button className="btn" onClick={() => fileInputRef.current?.click()}>
+        {model.isLoaded ? `📂 ${model.fileName}` : '📂 Load Model'}
+      </button>
+
       <button
         className={clsx('btn', measurement.mode === 'placing-calibration' && 'btn-active')}
         disabled={!model.isLoaded}

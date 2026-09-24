@@ -22,6 +22,12 @@ function fmtRaw(raw: number, scaleFactor: number | null, unit: LengthUnit): stri
   return `${Math.abs(raw).toFixed(3)} u`;
 }
 
+const AXIS_COLOR: Record<string, string> = {
+  x: '#f87171', // red
+  y: '#4ade80', // green
+  z: '#60a5fa', // blue
+};
+
 export function MeasurementDetailBox({ a, b, color, scaleFactor, unit }: Props) {
   const mid = a.clone().add(b).multiplyScalar(0.5);
 
@@ -34,7 +40,7 @@ export function MeasurementDetailBox({ a, b, color, scaleFactor, unit }: Props) 
   const totalText =
     totalReal != null ? formatDistance(totalReal, unit) : `${total.toFixed(3)} u`;
 
-  // Compute a perpendicular offset so the box sits beside the line
+  // Perpendicular offset so the box sits beside the line
   const dir = b.clone().sub(a).normalize();
   const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
   const perp = new THREE.Vector3().crossVectors(dir, up).normalize();
@@ -45,28 +51,72 @@ export function MeasurementDetailBox({ a, b, color, scaleFactor, unit }: Props) 
     mid.z + offset.z,
   ];
 
-  const borderColor = color + '88';
+  // Inline styles — CSS classes don't apply inside drei's Html portal
+  const boxStyle: React.CSSProperties = {
+    background: 'rgba(10, 10, 15, 0.88)',
+    border: `1px solid ${color}66`,
+    borderRadius: 8,
+    padding: '7px 11px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    minWidth: 110,
+    boxShadow: `0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px ${color}22`,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    pointerEvents: 'none',
+    userSelect: 'none',
+  };
+
+  const totalStyle: React.CSSProperties = {
+    color,
+    fontWeight: 700,
+    fontSize: 14,
+    letterSpacing: '0.02em',
+    textAlign: 'center',
+    paddingBottom: 4,
+  };
+
+  const dividerStyle: React.CSSProperties = {
+    height: 1,
+    background: `${color}44`,
+    margin: '0 -2px 2px',
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+  };
+
+  const valStyle: React.CSSProperties = {
+    color: '#e4e4e7',
+    fontSize: 11,
+    fontFamily: "'JetBrains Mono','Fira Code','Consolas',monospace",
+    fontWeight: 500,
+  };
+
+  const rows: Array<{ axis: string; key: string; val: string }> = [
+    { axis: 'ΔX', key: 'x', val: fmtRaw(dx, scaleFactor, unit) },
+    { axis: 'ΔY', key: 'y', val: fmtRaw(dy, scaleFactor, unit) },
+    { axis: 'ΔZ', key: 'z', val: fmtRaw(dz, scaleFactor, unit) },
+  ];
 
   return (
     <Html position={boxPos} center distanceFactor={8} zIndexRange={[9, 0]}>
-      <div
-        className="detail-box"
-        style={{ '--detail-accent': color, '--detail-border': borderColor } as React.CSSProperties}
-      >
-        <div className="detail-box__total">{totalText}</div>
-        <div className="detail-box__divider" />
-        <div className="detail-box__row">
-          <span className="detail-box__axis x">ΔX</span>
-          <span className="detail-box__val">{fmtRaw(dx, scaleFactor, unit)}</span>
-        </div>
-        <div className="detail-box__row">
-          <span className="detail-box__axis y">ΔY</span>
-          <span className="detail-box__val">{fmtRaw(dy, scaleFactor, unit)}</span>
-        </div>
-        <div className="detail-box__row">
-          <span className="detail-box__axis z">ΔZ</span>
-          <span className="detail-box__val">{fmtRaw(dz, scaleFactor, unit)}</span>
-        </div>
+      <div style={boxStyle}>
+        {/* Total distance */}
+        <div style={totalStyle}>{totalText}</div>
+        <div style={dividerStyle} />
+        {/* Per-axis rows */}
+        {rows.map(({ axis, key, val }) => (
+          <div key={key} style={rowStyle}>
+            <span style={{ color: AXIS_COLOR[key], fontWeight: 700, fontSize: 11 }}>
+              {axis}
+            </span>
+            <span style={valStyle}>{val}</span>
+          </div>
+        ))}
       </div>
     </Html>
   );

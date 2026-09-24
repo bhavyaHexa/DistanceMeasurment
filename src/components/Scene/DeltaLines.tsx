@@ -6,7 +6,33 @@ import type { LengthUnit } from '../../types/measurement';
 const DELTA_COLOR = '#ff4d4d';
 const DELTA_LINE_WIDTH = 1.5;
 
-/** Small label pinned to the midpoint of a delta leg */
+/** Inline styles — CSS classes don't apply inside drei's Html portal */
+const deltaLabelStyle: React.CSSProperties = {
+  background: 'rgba(0,0,0,0.82)',
+  color: '#ff8080',
+  fontWeight: 700,
+  padding: '2px 7px',
+  borderRadius: 4,
+  fontSize: 11,
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  border: '1px solid rgba(255,77,77,0.45)',
+  fontFamily: "'JetBrains Mono','Fira Code','Consolas',monospace",
+};
+
+interface Props {
+  a: THREE.Vector3;
+  b: THREE.Vector3;
+  scaleFactor: number | null;
+  unit: LengthUnit;
+}
+
+function fmt(rawLen: number, scaleFactor: number | null, unit: LengthUnit): string {
+  if (scaleFactor != null) return formatDistance(rawLen * scaleFactor, unit);
+  return `${rawLen.toFixed(3)} u`;
+}
+
+/** Label pinned to the midpoint of a delta leg, offset perpendicularly */
 function DeltaLegLabel({
   a,
   b,
@@ -29,43 +55,28 @@ function DeltaLegLabel({
 
   return (
     <Html position={pos} center distanceFactor={8} zIndexRange={[8, 0]}>
-      <div className="delta-label">{text}</div>
+      <div style={deltaLabelStyle}>{text}</div>
     </Html>
   );
 }
 
-interface Props {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  scaleFactor: number | null;
-  unit: LengthUnit;
-}
-
-function fmt(rawLen: number, scaleFactor: number | null, unit: LengthUnit): string {
-  if (scaleFactor != null) return formatDistance(rawLen * scaleFactor, unit);
-  return `${rawLen.toFixed(3)} u`;
-}
-
 export function DeltaLines({ a, b, scaleFactor, unit }: Props) {
-  // Corner point: same X/Z as A, but Y of B  →  forms the right angle
+  // Corner: same X/Z as A, Y of B — forms the right angle
   const corner = new THREE.Vector3(a.x, b.y, a.z);
 
   const deltaY = Math.abs(a.y - b.y);
-  const deltaH = Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2); // horizontal (XZ)
+  const deltaH = Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2);
 
-  // Skip degenerate legs (nearly zero length)
   const showVertical = deltaY > 1e-5;
   const showHorizontal = deltaH > 1e-5;
 
-  // Label offset directions (perpendicular to each leg in world space)
-  // Vertical leg: offset sideways (X direction)
+  // Label offset directions perpendicular to each leg
   const verticalOffsetDir = new THREE.Vector3(1, 0, 0);
-  // Horizontal leg: offset upward
   const horizontalOffsetDir = new THREE.Vector3(0, 1, 0);
 
   return (
     <group>
-      {/* Vertical leg: A → corner (height / ΔY) */}
+      {/* Vertical leg with label */}
       {showVertical && (
         <>
           <Line
@@ -87,7 +98,7 @@ export function DeltaLines({ a, b, scaleFactor, unit }: Props) {
         </>
       )}
 
-      {/* Horizontal leg: corner → B (XZ plane distance) */}
+      {/* Horizontal leg with label */}
       {showHorizontal && (
         <>
           <Line
@@ -109,7 +120,7 @@ export function DeltaLines({ a, b, scaleFactor, unit }: Props) {
         </>
       )}
 
-      {/* Right-angle indicator at the corner */}
+      {/* Right-angle indicator at corner */}
       {showVertical && showHorizontal && (
         <RightAngleIndicator corner={corner} a={a} b={b} />
       )}
@@ -130,7 +141,6 @@ function RightAngleIndicator({
   const size = corner.distanceTo(a) * 0.04 + corner.distanceTo(b) * 0.02;
   const s = Math.max(size, 0.005);
 
-  // Unit vectors along each leg from the corner
   const upDir = a.clone().sub(corner).normalize().multiplyScalar(s);
   const hDir = b.clone().sub(corner).normalize().multiplyScalar(s);
 
