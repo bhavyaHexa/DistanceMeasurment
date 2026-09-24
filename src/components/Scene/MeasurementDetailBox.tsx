@@ -44,7 +44,7 @@ export function MeasurementDetailBox({ a, b, color, scaleFactor, unit }: Props) 
   const dir = b.clone().sub(a).normalize();
   const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
   const perp = new THREE.Vector3().crossVectors(dir, up).normalize();
-  const offset = perp.multiplyScalar(total * 0.15 + 0.05);
+  const offset = perp.multiplyScalar(total * 0.35 + 0.12);
   const boxPos: [number, number, number] = [
     mid.x + offset.x,
     mid.y + offset.y,
