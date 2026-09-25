@@ -4,7 +4,6 @@ import { DraggablePointMarker } from './DraggablePointMarker';
 import { PointMarker } from './PointMarker';
 import { MeasurementLine } from './MeasurementLine';
 import { MeasurementLabel } from './MeasurementLabel';
-import { MeasurementDetailBox } from './MeasurementDetailBox';
 import { DeltaLines } from './DeltaLines';
 import { formatDistance } from '../../utils/units';
 
@@ -42,13 +41,6 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
               />
               <MeasurementLine a={m.pointA} b={m.pointB} color={MEASUREMENT_COLOR} />
               <MeasurementLabel a={m.pointA} b={m.pointB} text={text} />
-              <MeasurementDetailBox
-                a={m.pointA}
-                b={m.pointB}
-                color={MEASUREMENT_COLOR}
-                scaleFactor={measurement.scaleFactor}
-                unit={measurement.unit}
-              />
               <DeltaLines
                 a={m.pointA}
                 b={m.pointB}
