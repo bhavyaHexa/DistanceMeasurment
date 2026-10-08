@@ -24,6 +24,7 @@ export class MeasurementStore {
   measurements: Measurement[] = [];
   isAdding: boolean = false;
   pendingA: Vec3 | null = null;
+  pendingName: string = '';
   hoverPoint: Vec3 | null = null;
   selectedId: string | null = null;
   nextColorIndex: number = 0;
@@ -119,9 +120,14 @@ export class MeasurementStore {
   }
 
   // --- New Measurement Actions ---
+  setPendingName(name: string) {
+    this.pendingName = name;
+  }
+
   startAdding() {
     this.isAdding = true;
     this.pendingA = null;
+    this.pendingName = `Measurement ${this.measurements.length + 1}`;
   }
 
   placePoint(p: Vec3) {
@@ -132,7 +138,7 @@ export class MeasurementStore {
     } else {
       const measurement: Measurement = {
         id: makeId(),
-        name: `Measurement ${this.measurements.length + 1}`,
+        name: this.pendingName || `Measurement ${this.measurements.length + 1}`,
         a: this.pendingA,
         b: p,
         colorIndex: this.nextColorIndex,

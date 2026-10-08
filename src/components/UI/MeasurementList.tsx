@@ -10,6 +10,7 @@ export const MeasurementList = observer(function MeasurementList() {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [editingPending, setEditingPending] = useState(false);
 
   const startEdit = (id: string, name: string) => {
     setEditingId(id);
@@ -52,6 +53,7 @@ export const MeasurementList = observer(function MeasurementList() {
               ui.goToMeasure();
               measurement.startAdding();
               measurement.select(null);
+              setEditingPending(true);
             }}
           >
             + Add
@@ -60,7 +62,7 @@ export const MeasurementList = observer(function MeasurementList() {
       </div>
 
       <div className="panel-content" style={{ padding: 0 }}>
-        {measurement.measurements.length === 0 ? (
+        {measurement.measurements.length === 0 && !measurement.isAdding ? (
           <div className="empty-list-state">
             Click on the model to add your first measurement.
           </div>
@@ -116,6 +118,43 @@ export const MeasurementList = observer(function MeasurementList() {
                 </li>
               );
             })}
+            
+            {measurement.isAdding && (
+              <li className="meas-row selected">
+                <div 
+                  className="meas-dot" 
+                  style={{ background: MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line }}
+                />
+                
+                <div className="meas-name-col">
+                  {editingPending ? (
+                    <input 
+                      autoFocus
+                      className="meas-edit-input"
+                      value={measurement.pendingName}
+                      onChange={(e) => measurement.setPendingName(e.target.value)}
+                      onBlur={() => setEditingPending(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') setEditingPending(false);
+                      }}
+                    />
+                  ) : (
+                    <div className="meas-name" onDoubleClick={() => setEditingPending(true)}>
+                      {measurement.pendingName}
+                    </div>
+                  )}
+                </div>
+
+                <div className="meas-value" style={{ opacity: 0.5 }}>—</div>
+                
+                <button 
+                  className="btn-icon delete-btn" 
+                  onClick={() => measurement.cancelPending()}
+                >
+                  ×
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </div>
