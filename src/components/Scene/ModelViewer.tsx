@@ -45,12 +45,12 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
       return { point: [e.point.x, e.point.y, e.point.z] as [number, number, number], snapped: false };
     }
     const hit = e.intersections[0];
-    return snapToVertex(hit, e.camera as THREE.PerspectiveCamera, size);
+    return snapToVertex(hit, e.camera as THREE.PerspectiveCamera, size, e.pointer);
   };
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (measurement.draggingId) return;
-    if (ui.step === 'calibrate' || (ui.step === 'measure' && measurement.isAdding)) {
+    if ((ui.step === 'calibrate' && measurement.isAddingCal) || (ui.step === 'measure' && measurement.isAdding)) {
       e.stopPropagation();
       const res = getHitPoint(e);
       measurement.setHoverPoint(res.point);
@@ -80,7 +80,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
       e.stopPropagation();
       const res = getHitPoint(e);
       
-      if (ui.step === 'calibrate') {
+      if (ui.step === 'calibrate' && measurement.isAddingCal) {
         measurement.placeCalPoint(res.point);
       } else if (ui.step === 'measure' && measurement.isAdding) {
         measurement.placePoint(res.point);

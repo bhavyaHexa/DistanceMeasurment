@@ -72,7 +72,7 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
           let point: [number, number, number] = [hit.point.x, hit.point.y, hit.point.z];
           if (ui.snapToEdges) {
             const size = { width: gl.domElement.width / gl.getPixelRatio(), height: gl.domElement.height / gl.getPixelRatio() };
-            const snapped = snapToVertex(hit, camera, size);
+            const snapped = snapToVertex(hit, camera, size, _mouse);
             point = snapped.point;
           }
           measurement.movePoint(id, end, point);

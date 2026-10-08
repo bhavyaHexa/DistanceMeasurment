@@ -5,6 +5,7 @@ export function snapToVertex(
   hit: Intersection,
   camera: Camera,
   size: { width: number; height: number },
+  pointer?: THREE.Vector2,
   maxPx = 15
 ): { point: [number, number, number]; snapped: boolean } {
   const mesh = hit.object as THREE.Mesh;
@@ -33,15 +34,25 @@ export function snapToVertex(
   const vertices = [vA, vB, vC];
 
   // Screen coordinates of the mouse
-  const mouseScreen = hit.point.clone().project(camera);
-  const mousePxX = (mouseScreen.x * 0.5 + 0.5) * size.width;
-  const mousePxY = (-(mouseScreen.y) * 0.5 + 0.5) * size.height;
+  let mousePxX, mousePxY;
+  if (pointer) {
+    mousePxX = (pointer.x * 0.5 + 0.5) * size.width;
+    mousePxY = (-(pointer.y) * 0.5 + 0.5) * size.height;
+  } else {
+    const mouseScreen = hit.point.clone().project(camera);
+    mousePxX = (mouseScreen.x * 0.5 + 0.5) * size.width;
+    mousePxY = (-(mouseScreen.y) * 0.5 + 0.5) * size.height;
+  }
 
   let nearestVertex: THREE.Vector3 | null = null;
   let minDistance = maxPx;
 
   for (const v of vertices) {
     const projected = v.clone().project(camera);
+    
+    // Ignore vertices behind the camera (z > 1 in NDC for WebGL)
+    if (projected.z > 1 || projected.z < -1) continue;
+
     const pxX = (projected.x * 0.5 + 0.5) * size.width;
     const pxY = (-(projected.y) * 0.5 + 0.5) * size.height;
     

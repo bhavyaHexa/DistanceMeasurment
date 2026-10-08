@@ -24,7 +24,22 @@ export const CalibrationPanel = observer(function CalibrationPanel() {
       </div>
 
       <div className="panel-content">
-        <div className="points-list">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          <button 
+            className={measurement.isAddingCal ? "btn-primary" : "btn-outline-sm"} 
+            onClick={() => measurement.startAddingCal()}
+            disabled={measurement.isAddingCal}
+          >
+            {measurement.isAddingCal ? "Adding..." : "+ Add calibration points"}
+          </button>
+        </div>
+        <div 
+          className="points-list"
+          style={{ 
+            opacity: (measurement.isAddingCal || measurement.calDraft.a || measurement.calDraft.b) ? 1 : 0.5,
+            transition: 'opacity 0.2s'
+          }}
+        >
           <div className="point-row">
             <span className="point-dot cal-dot">A</span>
             <span className="point-status">

@@ -18,6 +18,7 @@ export class MeasurementStore {
   calLength: number | null = null;
   calUnit: Unit = 'in';
   calDraft: { a: Vec3 | null; b: Vec3 | null } = { a: null, b: null };
+  isAddingCal: boolean = false;
 
   // --- New Measurement Fields ---
   measurements: Measurement[] = [];
@@ -64,7 +65,14 @@ export class MeasurementStore {
   }
 
   // --- New Calibration Actions ---
+  startAddingCal() {
+    this.isAddingCal = true;
+    this.calDraft = { a: null, b: null };
+  }
+
   placeCalPoint(p: Vec3) {
+    if (!this.isAddingCal) return;
+
     this.history.push({ type: 'placeCalPoint', prevDraft: { ...this.calDraft } });
     if (this.history.length > 20) this.history.shift();
 
@@ -72,8 +80,10 @@ export class MeasurementStore {
       this.calDraft.a = p;
     } else if (!this.calDraft.b) {
       this.calDraft.b = p;
+      this.isAddingCal = false;
     } else {
       this.calDraft.b = p;
+      this.isAddingCal = false;
     }
   }
 
@@ -197,10 +207,13 @@ export class MeasurementStore {
         this.calDraft.b = vec;
       }
     } else {
-      const m = this.measurements.find(x => x.id === id);
-      if (m) {
+      const mIndex = this.measurements.findIndex(x => x.id === id);
+      if (mIndex >= 0) {
+        const m = { ...this.measurements[mIndex] };
         if (endLower === 'a') m.a = vec;
         if (endLower === 'b') m.b = vec;
+        m.rawDistance = distance(m.a, m.b);
+        this.measurements[mIndex] = m;
       }
     }
   }
