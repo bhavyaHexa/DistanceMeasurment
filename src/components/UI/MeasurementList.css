@@ -1,0 +1,106 @@
+.scale-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-selected);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.scale-text {
+  font-size: var(--fs-small);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.list-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.empty-list-state {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+}
+
+.meas-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.meas-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg-surface);
+}
+.meas-row:hover { background: var(--bg-raised); }
+.meas-row.selected { background: var(--bg-selected); }
+
+.meas-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.meas-name-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.meas-name {
+  font-size: var(--fs-body);
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meas-edit-input {
+  width: 100%;
+  border: 1px solid var(--primary-line);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  font-size: var(--fs-body);
+  outline: none;
+}
+
+.meas-value {
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.meas-row.selected .meas-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.meas-row.hidden .meas-name,
+.meas-row.hidden .meas-value {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.btn-icon.delete-btn {
+  font-size: 18px;
+  opacity: 0;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  color: var(--text-muted);
+}
+
+.meas-row:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { color: var(--danger) !important; }

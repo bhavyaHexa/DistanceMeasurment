@@ -1,48 +1,141 @@
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
-import { formatDistance } from '../../utils/units';
+import { useState } from 'react';
+import { MEASURE_COLORS } from '../../utils/measureColors';
+import './Panels.css';
+import './MeasurementList.css';
 
 export const MeasurementList = observer(function MeasurementList() {
-  const { measurement } = useStores();
+  const { ui, measurement } = useStores();
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
-  const userMeasurements = measurement.measurements.filter((m) => m.kind !== 'calibration');
+  const startEdit = (id: string, name: string) => {
+    setEditingId(id);
+    setEditName(name);
+  };
+
+  const saveEdit = () => {
+    if (editingId) {
+      if (editName.trim()) measurement.rename(editingId, editName.trim());
+      setEditingId(null);
+    }
+  };
+
+  const exportCsv = () => {
+    const csv = measurement.exportCsv(ui.displayUnit);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'measurements.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="measurement-list">
-      <h3>Measurements</h3>
-
-      {/* Calibration status — scale factor only, no remove button */}
-      {measurement.scaleFactor != null ? (
-        <div className="scale-status">
-          <span className="scale-status__label">Scale</span>
-          <span className="scale-status__value">
-            1 unit = {formatDistance(measurement.scaleFactor, measurement.unit)}
+    <div className="panel-container">
+      <div className="panel-header">
+        <div className="scale-banner">
+          <span className="scale-text">
+            Scale set from {measurement.calLength} {measurement.calUnit}
           </span>
+          <button className="btn-text sm muted" onClick={() => ui.goToCalibrate()}>Change</button>
         </div>
-      ) : (
-        <p className="hint">Calibrate to see real-world distances.</p>
-      )}
+        
+        <div className="list-title-row">
+          <h2 className="panel-title">Measurements</h2>
+          <button 
+            className="btn-outline-sm" 
+            onClick={() => {
+              measurement.cancelPending();
+              measurement.select(null);
+            }}
+          >
+            + Add
+          </button>
+        </div>
+      </div>
 
-      {/* User measurements only */}
-      {userMeasurements.length === 0 && measurement.scaleFactor != null && (
-        <p className="hint" style={{ marginTop: 12 }}>No measurements yet.</p>
+      <div className="panel-content" style={{ padding: 0 }}>
+        {measurement.measurements.length === 0 ? (
+          <div className="empty-list-state">
+            Click on the model to add your first measurement.
+          </div>
+        ) : (
+          <ul className="meas-list">
+            {measurement.measurements.map(m => {
+              const isSelected = measurement.selectedId === m.id;
+              const colorObj = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length];
+              
+              return (
+                <li 
+                  key={m.id} 
+                  className={`meas-row ${isSelected ? 'selected' : ''} ${!m.visible ? 'hidden' : ''}`}
+                  onClick={() => measurement.select(m.id)}
+                >
+                  <div 
+                    className="meas-dot" 
+                    style={{ background: colorObj.line, opacity: m.visible ? 1 : 0.4 }}
+                    onClick={(e) => { e.stopPropagation(); measurement.toggleVisible(m.id); }}
+                  />
+                  
+                  <div className="meas-name-col">
+                    {editingId === m.id ? (
+                      <input 
+                        autoFocus
+                        className="meas-edit-input"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={saveEdit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit();
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                      />
+                    ) : (
+                      <div className="meas-name" onDoubleClick={() => startEdit(m.id, m.name)}>
+                        {m.name}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="meas-value">{measurement.displayValue(m, ui.displayUnit)}</div>
+                  
+                  <button 
+                    className="btn-icon delete-btn" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      measurement.remove(m.id);
+                    }}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {measurement.measurements.length > 0 && (
+        <div className="panel-footer">
+          <button className="btn-text muted" onClick={() => {
+            ui.askConfirm({
+              title: `Delete all ${measurement.measurements.length} measurements?`,
+              confirmLabel: 'Delete',
+              onConfirm: () => measurement.clearAll()
+            });
+          }}>
+            Clear all
+          </button>
+          <div style={{ flex: 1 }} />
+          <button className="btn-secondary" onClick={exportCsv}>
+            Export CSV
+          </button>
+        </div>
       )}
-      <ul>
-        {userMeasurements.map((m) => {
-          const real = measurement.realDistanceOf(m);
-          return (
-            <li key={m.id}>
-              <span className="kind">Measurement</span>
-              <span className="value">
-                {real != null ? formatDistance(real, measurement.unit) : `${m.rawDistance.toFixed(3)} u`}
-              </span>
-              <button className="btn-icon" onClick={() => measurement.removeMeasurement(m.id)}>
-                ✕
-              </button>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 });

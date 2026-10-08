@@ -1,44 +1,90 @@
-import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
+import { useState, useEffect } from 'react';
+import './Panels.css';
 
 export const CalibrationPanel = observer(function CalibrationPanel() {
-  const { measurement } = useStores();
-  const [value, setValue] = useState('');
+  const { ui, measurement } = useStores();
+  
+  const [localLength, setLocalLength] = useState(measurement.calLength?.toString() || '');
 
-  if (measurement.pendingCalibrationRawDistance == null) return null;
+  useEffect(() => {
+    if (measurement.calLength !== null) {
+      setLocalLength(measurement.calLength.toString());
+    }
+  }, [measurement.calLength]);
 
-  const submit = () => {
-    const num = parseFloat(value);
-    if (!Number.isFinite(num) || num <= 0) return;
-    measurement.completeCalibration(num);
-    setValue('');
-  };
+  const lengthVal = parseFloat(localLength);
+  const canApply = measurement.calDraft.a && measurement.calDraft.b && !isNaN(lengthVal) && lengthVal > 0;
 
   return (
-    <div className="calibration-panel">
-      <p>
-        Raw distance between the two points:{' '}
-        <strong>{measurement.pendingCalibrationRawDistance.toFixed(4)}</strong> scene units
-      </p>
-      <label>
-        Enter the known real-world distance ({measurement.unit})
-        <input
-          type="number"
-          min={0}
-          step="any"
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && submit()}
-        />
-      </label>
-      <div className="calibration-actions">
-        <button className="btn" onClick={submit}>
-          Confirm Calibration
-        </button>
-        <button className="btn btn-ghost" onClick={() => measurement.cancelPending()}>
+    <div className="panel-container">
+      <div className="panel-header">
+        <h2 className="panel-title">Scale</h2>
+      </div>
+
+      <div className="panel-content">
+        <div className="points-list">
+          <div className="point-row">
+            <span className="point-dot cal-dot">A</span>
+            <span className="point-status">
+              {measurement.calDraft.a ? 'Placed' : 'Click on the model'}
+            </span>
+            {measurement.calDraft.a && (
+              <button className="btn-text sm muted" onClick={() => measurement.repickCal('a')}>Re-pick</button>
+            )}
+          </div>
+          <div className="point-row">
+            <span className="point-dot cal-dot">B</span>
+            <span className="point-status">
+              {measurement.calDraft.b ? 'Placed' : 'Click on the model'}
+            </span>
+            {measurement.calDraft.b && (
+              <button className="btn-text sm muted" onClick={() => measurement.repickCal('b')}>Re-pick</button>
+            )}
+          </div>
+        </div>
+
+        <div className="length-input-group">
+          <label>Actual distance</label>
+          <div className="input-with-unit">
+            <input 
+              type="text" 
+              inputMode="decimal"
+              placeholder="0.0" 
+              value={localLength} 
+              onChange={(e) => setLocalLength(e.target.value)} 
+            />
+            <span className="unit-label">{ui.displayUnit}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel-footer">
+        <button 
+          className="btn-secondary" 
+          style={{ flex: 1 }}
+          onClick={() => {
+            measurement.cancelCalibration();
+            if (measurement.isCalibrated) {
+              ui.goToMeasure();
+            }
+          }}
+        >
           Cancel
+        </button>
+        <button 
+          className="btn-primary" 
+          style={{ flex: 1, background: 'var(--cal-line)' }}
+          disabled={!canApply}
+          onClick={() => {
+            if (canApply) {
+              measurement.applyCalibration(lengthVal, ui.displayUnit);
+              ui.goToMeasure();
+            }
+          }}
+        >
+          Apply
         </button>
       </div>
     </div>

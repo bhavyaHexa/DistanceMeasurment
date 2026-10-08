@@ -1,0 +1,77 @@
+:root {
+  /* Surfaces */
+  --bg-app:          #F1EEF9;
+  --bg-surface:      #FAF8FE;
+  --bg-raised:       #FFFFFF;
+  --bg-selected:     #EEE9FF;
+  --bg-tool-active:  #E9E3FF;
+  --bg-dropzone:     #F6F3FF;
+
+  /* Borders */
+  --border:          #E3DEF2;
+  --border-strong:   #D9D3EC;
+  --border-dropzone: #A893FF;
+
+  /* Text */
+  --text:            #2B2840;
+  --text-muted:      #6A6680;
+  --text-disabled:   #77738C;
+  --text-on-primary: #2A1A6B;
+
+  /* Primary (violet) */
+  --primary:         #C9BBFF;
+  --primary-hover:   #BBA9FF;
+  --primary-pressed: #AC97FF;
+  --primary-strong:  #6D4CFF;
+  --primary-line:    #8B6CFF;
+  --primary-ink:     #4B34C9;
+
+  /* Status */
+  --success:         #2FA87A;
+  --danger:          #C2410C;
+
+  /* Calibration (amber) */
+  --cal-line:        #F2A21B;
+  --cal-ink:         #8A5A00;
+
+  /* Axis */
+  --axis-x-line: #E5596B; --axis-x-bg: #FFD6DB; --axis-x-ink: #7A1F2B;
+  --axis-y-line: #3DBF7A; --axis-y-bg: #CFF3DE; --axis-y-ink: #0F4A2C;
+  --axis-z-line: #4C8DF6; --axis-z-bg: #D6E4FF; --axis-z-ink: #173B7A;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+
+  /* Radii */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Layout Sizes */
+  --header-h: 48px;
+  --statusbar-h: 32px;
+  --panel-w: 300px;
+  --row-h: 40px;
+  --btn-h: 36px;
+  --btn-h-sm: 30px;
+  --tool-btn: 40px;
+
+  /* Typography Sizes */
+  --fs-body: 13px;
+  --fs-small: 12px;
+  --fs-title: 14px;
+  --fs-input: 15px;
+  --fs-empty: 16px;
+}
+
+:focus-visible { 
+  outline: 2px solid var(--primary-line); 
+  outline-offset: 2px; 
+}

@@ -1,76 +1,63 @@
-import { useRef } from 'react';
 import { observer } from 'mobx-react-lite';
-import clsx from 'clsx';
 import { useStores } from '../../stores/StoreContext';
-import type { LengthUnit } from '../../types/measurement';
+import { StepTabs } from './StepTabs';
+import type { Unit } from '../../types/measurement';
+import './Toolbar.css';
 
-const UNITS: LengthUnit[] = ['mm', 'cm', 'm', 'in', 'ft'];
+const UNITS: Unit[] = ['mm', 'cm', 'm', 'in', 'ft'];
 
 export const Toolbar = observer(function Toolbar() {
-  const { measurement, model } = useStores();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { ui, model } = useStores();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) model.setFile(file);
-    // Reset so the same file can be re-selected
+    if (file) {
+      ui.requestReplace(file);
+    }
+    // Reset input so the same file can be selected again
     e.target.value = '';
   };
 
   return (
-    <div className="toolbar">
-      {/* Hidden file input for load/replace model */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".glb"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
+    <header className="header">
+      <div className="header-left">
+        {!model.file ? (
+          <span className="file-chip">No file open</span>
+        ) : (
+          <div className="file-chip">
+            <span className="file-name" title={model.file.name}>{model.file.name}</span>
+            <button className="btn-text muted" style={{ height: 'auto', padding: '0 4px' }} onClick={() => document.getElementById('replace-file-input')?.click()}>
+              Replace
+            </button>
+          </div>
+        )}
+        <input 
+          id="replace-file-input"
+          type="file" 
+          accept=".glb,.gltf" 
+          style={{ display: 'none' }} 
+          onChange={handleFileChange}
+        />
+      </div>
 
-      {/* Load / Replace model button */}
-      <button className="btn" onClick={() => fileInputRef.current?.click()}>
-        {model.isLoaded ? `📂 ${model.fileName}` : '📂 Load Model'}
-      </button>
+      <StepTabs />
 
-      <button
-        className={clsx('btn', measurement.mode === 'placing-calibration' && 'btn-active')}
-        disabled={!model.isLoaded}
-        onClick={() => measurement.startCalibration()}
-      >
-        {measurement.scaleFactor != null ? 'Recalibrate' : 'Calibrate'}
-      </button>
-
-      <button
-        className={clsx('btn', measurement.mode === 'placing-measurement' && 'btn-active')}
-        disabled={!model.isLoaded || measurement.scaleFactor == null}
-        title={measurement.scaleFactor == null ? 'Calibrate first' : undefined}
-        onClick={() => measurement.startMeasurement()}
-      >
-        Measure
-      </button>
-
-      {measurement.mode !== 'idle' && (
-        <button className="btn btn-ghost" onClick={() => measurement.cancelPending()}>
-          Cancel ({measurement.pendingPoints.length}/2 points placed)
-        </button>
-      )}
-
-      <select
-        className="unit-select"
-        value={measurement.unit}
-        onChange={(e) => measurement.setUnit(e.target.value as LengthUnit)}
-      >
-        {UNITS.map((u) => (
-          <option key={u} value={u}>
-            {u}
-          </option>
-        ))}
-      </select>
-
-      <button className="btn btn-danger" onClick={() => measurement.resetAll()}>
-        Reset Measurements
-      </button>
-    </div>
+      <div className="header-right">
+        {ui.step !== 'load' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: 'var(--fs-small)', color: 'var(--text-muted)' }}>Units</span>
+            <select 
+              className="units-select"
+              value={ui.displayUnit}
+              onChange={(e) => ui.setUnit(e.target.value as Unit)}
+            >
+              {UNITS.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    </header>
   );
 });

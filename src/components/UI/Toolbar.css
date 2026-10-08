@@ -1,0 +1,111 @@
+.header {
+  height: var(--header-h);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 250px;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+}
+.file-name {
+  color: var(--text);
+  font-weight: 500;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  gap: 2px;
+}
+
+.step-tab {
+  height: 30px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: var(--fs-small);
+  transition: all 0.2s ease;
+}
+
+.step-tab.active {
+  background: var(--bg-selected);
+  color: var(--text-on-primary);
+  font-weight: 600;
+}
+
+.step-tab.done {
+  color: var(--text);
+}
+
+.step-tab[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  font-size: 10px;
+  margin-right: 6px;
+}
+.step-tab.active .step-num {
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+.step-check {
+  margin-left: 6px;
+  color: var(--success);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  width: 250px;
+}
+
+.units-select {
+  padding: 4px var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text);
+  font-size: var(--fs-small);
+  outline: none;
+}
