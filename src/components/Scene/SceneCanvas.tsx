@@ -39,7 +39,7 @@ export const SceneCanvas = observer(function SceneCanvas() {
     <Canvas 
       camera={{ position: [3, 3, 3], fov: 50, near: 0.0001, far: 100000 }}
       dpr={[1, 2]}
-      gl={{ antialias: true }}
+      gl={{ antialias: true, logarithmicDepthBuffer: true }}
       style={{ cursor }}
     >
       <color attach="background" args={['#F1EEF9']} />
