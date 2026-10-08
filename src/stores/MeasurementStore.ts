@@ -254,13 +254,29 @@ export class MeasurementStore {
   }
 
   exportCsv(unit: Unit): string {
-    let csv = 'name,value,unit,dx,dy,dz,ax,ay,az,bx,by,bz\n';
     const mps = this.metersPerSceneUnit;
+    let csv = '';
+    
+    if (this.calLength !== null) {
+      csv += `"Scaling Ratio:",${this.calLength},"${this.calUnit}"\n\n`;
+    }
+
+    csv += 'name,value,unit,dx,dy,dz,ax,ay,az,bx,by,bz\n';
+    
     for (const m of this.measurements) {
       if (!m.visible) continue;
       const sceneDist = distance(m.a, m.b);
-      const val = mps !== null ? toUnit(sceneDist, mps, unit).toFixed(TO_METERS[unit]) : '';
-      csv += `"${m.name}",${val},${unit},${Math.abs(m.a[0] - m.b[0])},${Math.abs(m.a[1] - m.b[1])},${Math.abs(m.a[2] - m.b[2])},${m.a[0]},${m.a[1]},${m.a[2]},${m.b[0]},${m.b[1]},${m.b[2]}\n`;
+      const val = mps !== null ? toUnit(sceneDist, mps, unit).toFixed(2) : '';
+      
+      const dx = Math.abs(m.a[0] - m.b[0]);
+      const dy = Math.abs(m.a[1] - m.b[1]);
+      const dz = Math.abs(m.a[2] - m.b[2]);
+      
+      const dxVal = mps !== null ? toUnit(dx, mps, unit).toFixed(2) : dx.toFixed(2);
+      const dyVal = mps !== null ? toUnit(dy, mps, unit).toFixed(2) : dy.toFixed(2);
+      const dzVal = mps !== null ? toUnit(dz, mps, unit).toFixed(2) : dz.toFixed(2);
+
+      csv += `"${m.name}",${val},${unit},${dxVal},${dyVal},${dzVal},${m.a[0]},${m.a[1]},${m.a[2]},${m.b[0]},${m.b[1]},${m.b[2]}\n`;
     }
     return csv;
   }
