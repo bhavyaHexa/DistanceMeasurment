@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { useStores } from '../../stores/StoreContext';
 import { observer } from 'mobx-react-lite';
+import { Html } from '@react-three/drei';
 
 export const PointMarker = observer(function PointMarker({
   position,
@@ -9,13 +9,19 @@ export const PointMarker = observer(function PointMarker({
   position: THREE.Vector3;
   color: string;
 }) {
-  const { model } = useStores();
-  const radius = Math.max(model.boundingSphereRadius * 0.008, 0.002);
-
   return (
-    <mesh position={position} renderOrder={999}>
-      <sphereGeometry args={[radius, 16, 16]} />
-      <meshBasicMaterial color={color} depthTest={false} />
-    </mesh>
+    <Html position={position} center zIndexRange={[100, 0]}>
+      <div
+        style={{
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          backgroundColor: color,
+          border: '2px solid white',
+          boxShadow: '0 0 4px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
+        }}
+      />
+    </Html>
   );
 });

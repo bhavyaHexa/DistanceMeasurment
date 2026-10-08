@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
@@ -23,7 +24,6 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
   const { model, measurement } = useStores();
   const { camera, gl, controls } = useThree();
 
-  const radius = Math.max(model.boundingSphereRadius * 0.01, 0.003);
   const isDragging = useRef(false);
 
   /** Convert a DOM PointerEvent to normalised device coords [-1, 1] */
@@ -88,19 +88,27 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
   );
 
   return (
-    <mesh
-      position={position}
-      renderOrder={999}
-      onPointerDown={onPointerDown}
-      onPointerOver={() => {
-        if (measurement.mode === 'idle') gl.domElement.style.cursor = 'grab';
-      }}
-      onPointerOut={() => {
-        if (!isDragging.current) gl.domElement.style.cursor = '';
-      }}
-    >
-      <sphereGeometry args={[radius, 16, 16]} />
-      <meshBasicMaterial color={color} depthTest={false} />
-    </mesh>
+    <Html position={position} center zIndexRange={[100, 0]}>
+      <div
+        onPointerDown={onPointerDown}
+        onPointerEnter={() => {
+          if (measurement.mode === 'idle') gl.domElement.style.cursor = 'grab';
+        }}
+        onPointerLeave={() => {
+          if (!isDragging.current) gl.domElement.style.cursor = '';
+        }}
+        style={{
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          backgroundColor: color,
+          border: '2px solid white',
+          boxShadow: '0 0 4px rgba(0,0,0,0.5)',
+          cursor: measurement.mode === 'idle' ? 'grab' : 'default',
+          pointerEvents: 'auto',
+          touchAction: 'none',
+        }}
+      />
+    </Html>
   );
 });
