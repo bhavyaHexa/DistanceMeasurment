@@ -21,6 +21,7 @@ export class MeasurementStore {
 
   // --- New Measurement Fields ---
   measurements: Measurement[] = [];
+  isAdding: boolean = false;
   pendingA: Vec3 | null = null;
   hoverPoint: Vec3 | null = null;
   selectedId: string | null = null;
@@ -108,7 +109,14 @@ export class MeasurementStore {
   }
 
   // --- New Measurement Actions ---
+  startAdding() {
+    this.isAdding = true;
+    this.pendingA = null;
+  }
+
   placePoint(p: Vec3) {
+    if (!this.isAdding) return;
+
     if (!this.pendingA) {
       this.pendingA = p;
     } else {
@@ -124,6 +132,7 @@ export class MeasurementStore {
       this.measurements.push(measurement);
       this.nextColorIndex = (this.nextColorIndex + 1) % 6;
       this.pendingA = null;
+      this.isAdding = false;
       this.selectedId = measurement.id;
 
       this.history.push({ type: 'placePoint', measurement });
@@ -132,6 +141,7 @@ export class MeasurementStore {
   }
 
   cancelPending() {
+    this.isAdding = false;
     this.pendingA = null;
     // Old compat
     this.mode = 'idle';

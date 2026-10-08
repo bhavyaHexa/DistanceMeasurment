@@ -50,11 +50,13 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (measurement.draggingId) return;
-    if (ui.step === 'calibrate' || ui.step === 'measure') {
+    if (ui.step === 'calibrate' || (ui.step === 'measure' && measurement.isAdding)) {
       e.stopPropagation();
       const res = getHitPoint(e);
       measurement.setHoverPoint(res.point);
       // Optional: pass res.snapped to the store if you want a visual snap ring
+    } else {
+      measurement.setHoverPoint(null);
     }
   };
 
@@ -80,7 +82,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
       
       if (ui.step === 'calibrate') {
         measurement.placeCalPoint(res.point);
-      } else if (ui.step === 'measure') {
+      } else if (ui.step === 'measure' && measurement.isAdding) {
         measurement.placePoint(res.point);
       }
     }

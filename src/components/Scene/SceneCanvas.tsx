@@ -20,6 +20,13 @@ const FitController = observer(function FitController() {
   return null;
 });
 
+const CAMERA_SETTINGS = { 
+  position: [3, 3, 3] as [number, number, number], 
+  fov: 50, 
+  near: 0.0001, 
+  far: 100000 
+};
+
 export const SceneCanvas = observer(function SceneCanvas() {
   const { ui, model, measurement } = useStores();
 
@@ -37,7 +44,7 @@ export const SceneCanvas = observer(function SceneCanvas() {
 
   return (
     <Canvas 
-      camera={{ position: [3, 3, 3], fov: 50, near: 0.0001, far: 100000 }}
+      camera={CAMERA_SETTINGS}
       dpr={[1, 2]}
       gl={{ antialias: true, logarithmicDepthBuffer: true }}
       style={{ cursor }}
@@ -48,7 +55,7 @@ export const SceneCanvas = observer(function SceneCanvas() {
       <directionalLight position={[-5, -5, -5]} intensity={0.3} />
 
       <Suspense fallback={null}>
-        <Bounds fit observe margin={1.2}>
+        <Bounds margin={1.2}>
           {model.file && <ModelViewer url={model.file.url} />}
           <FitController />
         </Bounds>

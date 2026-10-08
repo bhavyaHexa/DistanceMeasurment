@@ -13,17 +13,24 @@ export const DropzoneOverlay = observer(function DropzoneOverlay({ variant = 'em
 
   useEffect(() => {
     if (variant !== 'drag') return;
+    const hasFiles = (e: DragEvent) => e.dataTransfer?.types ? Array.from(e.dataTransfer.types).includes('Files') : false;
+
     const handleDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
       e.preventDefault();
       counter.current++;
       ui.setDraggingFile(true);
     };
     const handleDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
       e.preventDefault();
       counter.current--;
       if (counter.current === 0) ui.setDraggingFile(false);
     };
-    const handleDragOver = (e: DragEvent) => e.preventDefault();
+    const handleDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+    };
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       counter.current = 0;

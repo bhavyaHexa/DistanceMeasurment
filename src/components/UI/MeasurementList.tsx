@@ -49,7 +49,8 @@ export const MeasurementList = observer(function MeasurementList() {
           <button 
             className="btn-outline-sm" 
             onClick={() => {
-              measurement.cancelPending();
+              ui.goToMeasure();
+              measurement.startAdding();
               measurement.select(null);
             }}
           >

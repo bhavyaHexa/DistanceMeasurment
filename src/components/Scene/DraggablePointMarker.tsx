@@ -102,6 +102,8 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
       <div
         className={classes}
         onPointerDown={onPointerDown}
+        onDragStart={(e) => e.preventDefault()}
+        draggable={false}
         style={{
           '--marker-color': color || 'var(--primary-strong)',
         } as React.CSSProperties}

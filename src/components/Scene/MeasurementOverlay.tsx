@@ -65,19 +65,6 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
       {ui.step === 'measure' && measurement.pendingA && (
         <group>
           <PointMarker position={measurement.pendingA} color={MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line} />
-          {measurement.hoverPoint && (
-            <>
-              <MeasurementLine 
-                a={measurement.pendingA} 
-                b={measurement.hoverPoint} 
-                color={MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line} 
-                dashed 
-              />
-              <MeasurementLabel 
-                m={{ id: 'pending', name: '', a: measurement.pendingA, b: measurement.hoverPoint, colorIndex: measurement.nextColorIndex, visible: true, rawDistance: 0 }} 
-              />
-            </>
-          )}
         </group>
       )}
 
