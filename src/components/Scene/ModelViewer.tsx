@@ -1,48 +1,105 @@
 import { useEffect, useRef } from 'react';
-import { useGLTF } from '@react-three/drei';
-import type { ThreeEvent } from '@react-three/fiber';
+import { useGLTF, useProgress } from '@react-three/drei';
+import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
-import { useClickVsDrag } from '../../hooks/useClickVsDrag';
 import { disposeObject3D } from '../../utils/disposeObject';
+import { snapToVertex } from '../../utils/snap';
 
 export const ModelViewer = observer(function ModelViewer({ url }: { url: string }) {
   const gltf = useGLTF(url);
-  const { model, measurement } = useStores();
+  const { model, measurement, ui } = useStores();
   const sceneRef = useRef(gltf.scene);
+  const pointerDownPos = useRef<{ x: number; y: number; time: number } | null>(null);
+  const { progress } = useProgress();
+  const { size } = useThree();
 
   useEffect(() => {
-    const box = new THREE.Box3().setFromObject(gltf.scene);
-    model.setLoaded(box);
-    // Store a plain (non-observable) ref to the scene so DraggablePointMarker
-    // can raycast against it without needing a React context.
-    model.setScene(gltf.scene);
+    if (!model.isLoaded && model.loadProgress !== null) {
+      model.setProgress(progress);
+    }
+  }, [progress, model]);
 
-    const center = box.getCenter(new THREE.Vector3());
-    gltf.scene.position.x -= center.x;
-    gltf.scene.position.z -= center.z;
-    gltf.scene.position.y -= box.min.y;
+  useEffect(() => {
+    if (gltf.scene) {
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      model.setLoaded(box);
+      model.setScene(gltf.scene);
 
+      const center = box.getCenter(new THREE.Vector3());
+      gltf.scene.position.x -= center.x;
+      gltf.scene.position.z -= center.z;
+      gltf.scene.position.y -= box.min.y;
+
+      ui.requestFit();
+    }
     return () => {
       model.setScene(null);
       disposeObject3D(sceneRef.current);
     };
-  }, [gltf, model]);
+  }, [gltf, model, ui]);
 
-  const handleClick = (e: ThreeEvent<PointerEvent>) => {
-    if (measurement.mode === 'idle') return;
-    e.stopPropagation();
-    measurement.addPoint(e.point);
+  const getHitPoint = (e: ThreeEvent<PointerEvent>) => {
+    if (!ui.snapToEdges || !e.intersections || e.intersections.length === 0) {
+      return { point: [e.point.x, e.point.y, e.point.z] as [number, number, number], snapped: false };
+    }
+    const hit = e.intersections[0];
+    return snapToVertex(hit, e.camera as THREE.PerspectiveCamera, size);
   };
 
-  const { onPointerDown, onPointerUp } = useClickVsDrag(handleClick);
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
+    if (measurement.draggingId) return;
+    if (ui.step === 'calibrate' || ui.step === 'measure') {
+      e.stopPropagation();
+      const res = getHitPoint(e);
+      measurement.setHoverPoint(res.point);
+      // Optional: pass res.snapped to the store if you want a visual snap ring
+    }
+  };
+
+  const handlePointerLeave = () => {
+    measurement.setHoverPoint(null);
+  };
+
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    pointerDownPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
+    if (!pointerDownPos.current) return;
+    const dx = e.clientX - pointerDownPos.current.x;
+    const dy = e.clientY - pointerDownPos.current.y;
+    const dt = Date.now() - pointerDownPos.current.time;
+    pointerDownPos.current = null;
+
+    // Allow up to 15 pixels of movement and 500ms for a click to make placement smoother
+    if (Math.abs(dx) < 15 && Math.abs(dy) < 15 && dt < 500) {
+      e.stopPropagation();
+      const res = getHitPoint(e);
+      
+      if (ui.step === 'calibrate') {
+        measurement.placeCalPoint(res.point);
+      } else if (ui.step === 'measure') {
+        measurement.placePoint(res.point);
+      }
+    }
+  };
+
+  const handlePointerMissed = () => {
+    if (ui.step === 'measure') {
+      measurement.select(null);
+    }
+  };
 
   return (
     <primitive
       object={gltf.scene}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      onPointerMissed={handlePointerMissed}
     />
   );
 });

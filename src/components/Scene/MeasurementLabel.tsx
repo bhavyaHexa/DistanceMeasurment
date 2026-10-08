@@ -1,34 +1,42 @@
-import * as THREE from 'three';
 import { Html } from '@react-three/drei';
+import { observer } from 'mobx-react-lite';
+import { useStores } from '../../stores/StoreContext';
+import type { Measurement } from '../../types/measurement';
+import { MEASURE_COLORS } from '../../utils/measureColors';
+import './MeasurementLabel.css';
 
-/** Inline styles — CSS classes don't apply inside drei's Html portal */
-const labelStyle: React.CSSProperties = {
-  background: 'rgba(0,0,0,0.82)',
-  color: '#38bdf8',
-  fontWeight: 700,
-  padding: '2px 8px',
-  borderRadius: 4,
-  fontSize: 12,
-  whiteSpace: 'nowrap',
-  pointerEvents: 'none',
-  border: '1px solid rgba(56,189,248,0.45)',
-  fontFamily: 'Inter, system-ui, sans-serif',
-  letterSpacing: '0.02em',
-};
+export const MeasurementLabel = observer(function MeasurementLabel({ m }: { m: Measurement }) {
+  const { measurement, ui } = useStores();
 
-export function MeasurementLabel({
-  a,
-  b,
-  text,
-}: {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  text: string;
-}) {
-  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const isSelected = measurement.selectedId === m.id;
+  const colorObj = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length];
+  
+  const midX = (m.a[0] + m.b[0]) / 2;
+  const midY = (m.a[1] + m.b[1]) / 2;
+  const midZ = (m.a[2] + m.b[2]) / 2;
+
+  let classes = 'meas-badge';
+  if (isSelected) classes += ' active';
+
+  let text = '';
+  if (m.id === 'pending') {
+    text = measurement.displayValue(m, ui.displayUnit) || '...';
+  } else {
+    text = measurement.displayValue(m, ui.displayUnit);
+  }
+
   return (
-    <Html position={mid} center distanceFactor={8} zIndexRange={[10, 0]}>
-      <div style={labelStyle}>{text}</div>
+    <Html position={[midX, midY, midZ]} center zIndexRange={[80, 0]} pointerEvents="none">
+      <div 
+        className={classes} 
+        style={{
+          '--badge-bg': isSelected ? colorObj.line : colorObj.bg,
+          '--badge-color': isSelected ? '#fff' : colorObj.line,
+          '--badge-border': colorObj.line
+        } as React.CSSProperties}
+      >
+        {text}
+      </div>
     </Html>
   );
-}
+});

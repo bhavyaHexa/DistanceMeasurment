@@ -5,56 +5,86 @@ import { PointMarker } from './PointMarker';
 import { MeasurementLine } from './MeasurementLine';
 import { MeasurementLabel } from './MeasurementLabel';
 import { DeltaLines } from './DeltaLines';
-import { formatDistance } from '../../utils/units';
-
-const MEASUREMENT_COLOR = '#22d3ee';
-const PENDING_COLOR = '#f87171';
+import { MeasurementDetailBox } from './MeasurementDetailBox';
+import { MEASURE_COLORS } from '../../utils/measureColors';
 
 export const MeasurementOverlay = observer(function MeasurementOverlay() {
-  const { measurement } = useStores();
+  const { measurement, ui } = useStores();
 
   return (
     <group>
-      {measurement.measurements
-        .filter((m) => m.kind !== 'calibration')
-        .map((m) => {
-          const real = measurement.realDistanceOf(m);
-          const text =
-            real != null
-              ? formatDistance(real, measurement.unit)
-              : `${m.rawDistance.toFixed(3)} (uncalibrated)`;
+      {/* 1. Calibrate step */}
+      {ui.step === 'calibrate' && (
+        <group>
+          {measurement.calDraft.a && measurement.calDraft.b && (
+            <MeasurementLine 
+              a={measurement.calDraft.a} 
+              b={measurement.calDraft.b} 
+              color="var(--cal-line)" 
+            />
+          )}
+          {measurement.calDraft.a && (
+            <DraggablePointMarker id="cal" end="a" position={measurement.calDraft.a} isCal />
+          )}
+          {measurement.calDraft.b && (
+            <DraggablePointMarker id="cal" end="b" position={measurement.calDraft.b} isCal />
+          )}
+        </group>
+      )}
 
-          return (
-            <group key={m.id}>
-              {/* Draggable endpoints — grab & drag to reposition on the model */}
-              <DraggablePointMarker
-                measurementId={m.id}
-                which="A"
-                position={m.pointA}
-                color={MEASUREMENT_COLOR}
-              />
-              <DraggablePointMarker
-                measurementId={m.id}
-                which="B"
-                position={m.pointB}
-                color={MEASUREMENT_COLOR}
-              />
-              <MeasurementLine a={m.pointA} b={m.pointB} color={MEASUREMENT_COLOR} />
-              <MeasurementLabel a={m.pointA} b={m.pointB} text={text} />
-              <DeltaLines
-                a={m.pointA}
-                b={m.pointB}
-                scaleFactor={measurement.scaleFactor}
-                unit={measurement.unit}
-              />
-            </group>
-          );
-        })}
+      {/* 2. Measure step */}
+      {ui.step === 'measure' && measurement.measurements.map(m => {
+        if (!m.visible) return null;
+        const color = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length].line;
+        const isSelected = measurement.selectedId === m.id;
+        const isDraggingThis = measurement.draggingId === m.id;
+        
+        return (
+          <group key={m.id}>
+            <MeasurementLine a={m.a} b={m.b} color={color} isHover={isSelected && !measurement.draggingId} />
+            <MeasurementLabel m={m} />
+            
+            {isSelected ? (
+              <>
+                <DraggablePointMarker id={m.id} end="a" position={m.a} color={color} />
+                <DraggablePointMarker id={m.id} end="b" position={m.b} color={color} />
+                {ui.showAxisLines && !isDraggingThis && <DeltaLines m={m} />}
+                {!isDraggingThis && <MeasurementDetailBox m={m} />}
+              </>
+            ) : (
+              <>
+                <PointMarker position={m.a} color={color} />
+                <PointMarker position={m.b} color={color} />
+              </>
+            )}
+          </group>
+        );
+      })}
 
-      {/* Pending points (non-draggable — still being placed) */}
-      {measurement.pendingPoints.map((p, i) => (
-        <PointMarker key={i} position={p} color={PENDING_COLOR} />
-      ))}
+      {/* 3. Pending Measurement */}
+      {ui.step === 'measure' && measurement.pendingA && (
+        <group>
+          <PointMarker position={measurement.pendingA} color={MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line} />
+          {measurement.hoverPoint && (
+            <>
+              <MeasurementLine 
+                a={measurement.pendingA} 
+                b={measurement.hoverPoint} 
+                color={MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line} 
+                dashed 
+              />
+              <MeasurementLabel 
+                m={{ id: 'pending', name: '', a: measurement.pendingA, b: measurement.hoverPoint, colorIndex: measurement.nextColorIndex, visible: true, rawDistance: 0 }} 
+              />
+            </>
+          )}
+        </group>
+      )}
+
+      {/* Snap ring */}
+      {ui.snapToEdges && measurement.hoverPoint && !measurement.draggingId && (
+        <PointMarker position={measurement.hoverPoint} color="var(--primary-strong)" isSnap />
+      )}
     </group>
   );
 });

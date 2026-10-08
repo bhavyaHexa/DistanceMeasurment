@@ -1,123 +1,71 @@
-import * as THREE from 'three';
-import { Html } from '@react-three/drei';
-import { formatDistance } from '../../utils/units';
-import type { LengthUnit } from '../../types/measurement';
+import { Html } from "@react-three/drei";
+import { observer } from "mobx-react-lite";
+import type { Measurement } from "../../types/measurement";
+import { useStores } from "../../stores/StoreContext";
+import { formatDistance } from "../../utils/units";
+import "./MeasurementLabel.css";
 
-interface Props {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  color: string;
-  /** mm per scene-unit; null = uncalibrated */
-  scaleFactor: number | null;
-  unit: LengthUnit;
-}
+export const MeasurementDetailBox = observer(function MeasurementDetailBox({
+  m,
+}: {
+  m: Measurement;
+}) {
+  const { ui, measurement } = useStores();
 
-function scaleRaw(raw: number, scaleFactor: number | null): number | null {
-  return scaleFactor != null ? raw * scaleFactor : null;
-}
+  const dx = Math.abs(m.a[0] - m.b[0]);
+  const dy = Math.abs(m.a[1] - m.b[1]);
+  const dz = Math.abs(m.a[2] - m.b[2]);
 
-function fmtRaw(raw: number, scaleFactor: number | null, unit: LengthUnit): string {
-  const real = scaleRaw(Math.abs(raw), scaleFactor);
-  if (real != null) return formatDistance(real, unit);
-  return `${Math.abs(raw).toFixed(3)} u`;
-}
+  const mps = measurement.metersPerSceneUnit;
+  // 0.001 is mm. Wait, toUnit handles it.
+  // Better: just format the raw value using the same logic as distance
+  // Actually, toUnit takes (meters, unit).
+  // dx is in scene units. Real dx in meters = dx * mps.
 
-const AXIS_COLOR: Record<string, string> = {
-  x: '#f87171', // red
-  y: '#4ade80', // green
-  z: '#60a5fa', // blue
-};
-
-export function MeasurementDetailBox({ a, b, color, scaleFactor, unit }: Props) {
-  const mid = a.clone().add(b).multiplyScalar(0.5);
-
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const dz = b.z - a.z;
-  const total = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-  const totalReal = scaleRaw(total, scaleFactor);
-  const totalText =
-    totalReal != null ? formatDistance(totalReal, unit) : `${total.toFixed(3)} u`;
-
-  // Perpendicular offset so the box sits beside the line
-  const dir = b.clone().sub(a).normalize();
-  const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-  const perp = new THREE.Vector3().crossVectors(dir, up).normalize();
-  const offset = perp.multiplyScalar(total * 0.35 + 0.12);
-  const boxPos: [number, number, number] = [
-    mid.x + offset.x,
-    mid.y + offset.y,
-    mid.z + offset.z,
-  ];
-
-  // Inline styles — CSS classes don't apply inside drei's Html portal
-  const boxStyle: React.CSSProperties = {
-    background: 'rgba(10, 10, 15, 0.88)',
-    border: `1px solid ${color}66`,
-    borderRadius: 8,
-    padding: '7px 11px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    minWidth: 110,
-    boxShadow: `0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px ${color}22`,
-    fontFamily: 'Inter, system-ui, sans-serif',
-    pointerEvents: 'none',
-    userSelect: 'none',
+  const fmt = (val: number) => {
+    if (mps === null) return val.toFixed(2);
+    // val is scene units.
+    // val * mps = meters
+    // meters to display unit = toUnit(val, mps, ui.displayUnit) Wait, toUnit(val, mps, unit) takes (val_in_scene, mps, unit).
+    // Let's look at toUnit:
+    // export function toUnit(sceneDist: number, metersPerSceneUnit: number, targetUnit: Unit): number {
+    //   const meters = sceneDist * metersPerSceneUnit;
+    //   return meters / TO_METERS[targetUnit];
+    // }
+    const meters = val * mps;
+    const converted =
+      meters /
+      (ui.displayUnit === "mm"
+        ? 0.001
+        : ui.displayUnit === "cm"
+          ? 0.01
+          : ui.displayUnit === "m"
+            ? 1
+            : ui.displayUnit === "in"
+              ? 0.0254
+              : 0.3048);
+    return formatDistance(converted, ui.displayUnit);
   };
 
-  const totalStyle: React.CSSProperties = {
-    color,
-    fontWeight: 700,
-    fontSize: 14,
-    letterSpacing: '0.02em',
-    textAlign: 'center',
-    paddingBottom: 4,
-  };
-
-  const dividerStyle: React.CSSProperties = {
-    height: 1,
-    background: `${color}44`,
-    margin: '0 -2px 2px',
-  };
-
-  const rowStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10,
-  };
-
-  const valStyle: React.CSSProperties = {
-    color: '#e4e4e7',
-    fontSize: 11,
-    fontFamily: "'JetBrains Mono','Fira Code','Consolas',monospace",
-    fontWeight: 500,
-  };
-
-  const rows: Array<{ axis: string; key: string; val: string }> = [
-    { axis: 'ΔX', key: 'x', val: fmtRaw(dx, scaleFactor, unit) },
-    { axis: 'ΔY', key: 'y', val: fmtRaw(dy, scaleFactor, unit) },
-    { axis: 'ΔZ', key: 'z', val: fmtRaw(dz, scaleFactor, unit) },
-  ];
+  const posArray = m.b;
 
   return (
-    <Html position={boxPos} center distanceFactor={8} zIndexRange={[9, 0]}>
-      <div style={boxStyle}>
-        {/* Total distance */}
-        <div style={totalStyle}>{totalText}</div>
-        <div style={dividerStyle} />
-        {/* Per-axis rows */}
-        {rows.map(({ axis, key, val }) => (
-          <div key={key} style={rowStyle}>
-            <span style={{ color: AXIS_COLOR[key], fontWeight: 700, fontSize: 11 }}>
-              {axis}
-            </span>
-            <span style={valStyle}>{val}</span>
-          </div>
-        ))}
+    <Html
+      position={posArray as [number, number, number]}
+      style={{ transform: "translate(20px, -20px)" }}
+      zIndexRange={[110, 0]}
+    >
+      <div className="detail-box">
+        <div className="detail-row">
+          <span className="detail-label x">ΔX</span> {fmt(dx)}
+        </div>
+        <div className="detail-row">
+          <span className="detail-label y">ΔY</span> {fmt(dy)}
+        </div>
+        <div className="detail-row">
+          <span className="detail-label z">ΔZ</span> {fmt(dz)}
+        </div>
       </div>
     </Html>
   );
-}
+});

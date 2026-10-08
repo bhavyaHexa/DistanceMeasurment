@@ -1,27 +1,28 @@
-import * as THREE from 'three';
-import { observer } from 'mobx-react-lite';
 import { Html } from '@react-three/drei';
+import type { Vec3 } from '../../types/measurement';
+import * as THREE from 'three';
+import './Markers.css';
 
-export const PointMarker = observer(function PointMarker({
-  position,
-  color,
-}: {
-  position: THREE.Vector3;
-  color: string;
-}) {
+interface Props {
+  position: Vec3 | THREE.Vector3;
+  color?: string;
+  isSnap?: boolean;
+}
+
+export function PointMarker({ position, color, isSnap }: Props) {
+  const posArray = Array.isArray(position) ? position : [position.x, position.y, position.z];
+
+  if (isSnap) {
+    return (
+      <Html position={posArray as [number, number, number]} center pointerEvents="none" zIndexRange={[100, 0]}>
+        <div className="snap-ring" style={{ borderColor: color || 'var(--primary-strong)' }} />
+      </Html>
+    );
+  }
+
   return (
-    <Html position={position} center zIndexRange={[100, 0]}>
-      <div
-        style={{
-          width: '12px',
-          height: '12px',
-          borderRadius: '50%',
-          backgroundColor: color,
-          border: '2px solid white',
-          boxShadow: '0 0 4px rgba(0,0,0,0.5)',
-          pointerEvents: 'none',
-        }}
-      />
+    <Html position={posArray as [number, number, number]} center pointerEvents="none" zIndexRange={[90, 0]}>
+      <div className="point-marker" style={{ '--marker-color': color || 'var(--primary)' } as React.CSSProperties} />
     </Html>
   );
-});
+}

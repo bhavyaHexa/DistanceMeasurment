@@ -1,162 +1,37 @@
-import * as THREE from 'three';
-import { Line, Html } from '@react-three/drei';
-import { formatDistance } from '../../utils/units';
-import type { LengthUnit } from '../../types/measurement';
+import { observer } from 'mobx-react-lite';
+import { Html, Line } from '@react-three/drei';
+import type { Measurement } from '../../types/measurement';
+import './DeltaLabels.css';
 
-const DELTA_COLOR = '#ff4d4d';
-const DELTA_LINE_WIDTH = 1.5;
+export const DeltaLines = observer(function DeltaLines({ m }: { m: Measurement }) {
 
-/** Inline styles — CSS classes don't apply inside drei's Html portal */
-const deltaLabelStyle: React.CSSProperties = {
-  background: 'rgba(0,0,0,0.82)',
-  color: '#ff8080',
-  fontWeight: 700,
-  padding: '2px 7px',
-  borderRadius: 4,
-  fontSize: 11,
-  whiteSpace: 'nowrap',
-  pointerEvents: 'none',
-  border: '1px solid rgba(255,77,77,0.45)',
-  fontFamily: "'JetBrains Mono','Fira Code','Consolas',monospace",
-};
+  // Delta dimension values are now shown in the MeasurementDetailBox instead of on the lines.
 
-interface Props {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  scaleFactor: number | null;
-  unit: LengthUnit;
-}
+  const p1: [number, number, number] = [m.a[0], m.a[1], m.a[2]];
+  const p2: [number, number, number] = [m.b[0], m.a[1], m.a[2]];
+  const p3: [number, number, number] = [m.b[0], m.b[1], m.a[2]];
+  const p4: [number, number, number] = [m.b[0], m.b[1], m.b[2]];
 
-function fmt(rawLen: number, scaleFactor: number | null, unit: LengthUnit): string {
-  if (scaleFactor != null) return formatDistance(rawLen * scaleFactor, unit);
-  return `${rawLen.toFixed(3)} u`;
-}
-
-/** Label pinned to the midpoint of a delta leg, offset perpendicularly */
-function DeltaLegLabel({
-  a,
-  b,
-  text,
-  offsetDir,
-}: {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  text: string;
-  offsetDir: THREE.Vector3;
-}) {
-  const mid = a.clone().add(b).multiplyScalar(0.5);
-  const len = a.distanceTo(b);
-  const offset = offsetDir.clone().multiplyScalar(len * 0.18 + 0.02);
-  const pos: [number, number, number] = [
-    mid.x + offset.x,
-    mid.y + offset.y,
-    mid.z + offset.z,
-  ];
-
-  return (
-    <Html position={pos} center distanceFactor={8} zIndexRange={[8, 0]}>
-      <div style={deltaLabelStyle}>{text}</div>
-    </Html>
-  );
-}
-
-export function DeltaLines({ a, b, scaleFactor, unit }: Props) {
-  // Corner: same X/Z as A, Y of B — forms the right angle
-  const corner = new THREE.Vector3(a.x, b.y, a.z);
-
-  const deltaY = Math.abs(a.y - b.y);
-  const deltaH = Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2);
-
-  const showVertical = deltaY > 1e-5;
-  const showHorizontal = deltaH > 1e-5;
-
-  // Label offset directions perpendicular to each leg
-  const verticalOffsetDir = new THREE.Vector3(1, 0, 0);
-  const horizontalOffsetDir = new THREE.Vector3(0, 1, 0);
+  const midX = [(p1[0] + p2[0]) / 2, p1[1], p1[2]];
+  const midY = [p2[0], (p2[1] + p3[1]) / 2, p2[2]];
+  const midZ = [p3[0], p3[1], (p3[2] + p4[2]) / 2];
 
   return (
     <group>
-      {/* Vertical leg with label */}
-      {showVertical && (
-        <>
-          <Line
-            points={[a, corner]}
-            color={DELTA_COLOR}
-            lineWidth={DELTA_LINE_WIDTH}
-            dashed
-            dashSize={0.04}
-            gapSize={0.025}
-            depthTest={false}
-            renderOrder={997}
-          />
-          <DeltaLegLabel
-            a={a}
-            b={corner}
-            text={`↕ ${fmt(deltaY, scaleFactor, unit)}`}
-            offsetDir={verticalOffsetDir}
-          />
-        </>
-      )}
+      <Line points={[p1, p2]} color="#cc0000" lineWidth={1} dashed depthTest={false} renderOrder={997} />
+      <Html position={midX as [number, number, number]} center pointerEvents="none" zIndexRange={[70, 0]}>
+        <div className="delta-label x">ΔX</div>
+      </Html>
 
-      {/* Horizontal leg with label */}
-      {showHorizontal && (
-        <>
-          <Line
-            points={[corner, b]}
-            color={DELTA_COLOR}
-            lineWidth={DELTA_LINE_WIDTH}
-            dashed
-            dashSize={0.04}
-            gapSize={0.025}
-            depthTest={false}
-            renderOrder={997}
-          />
-          <DeltaLegLabel
-            a={corner}
-            b={b}
-            text={`↔ ${fmt(deltaH, scaleFactor, unit)}`}
-            offsetDir={horizontalOffsetDir}
-          />
-        </>
-      )}
+      <Line points={[p2, p3]} color="#d9a400" lineWidth={1} dashed depthTest={false} renderOrder={997} />
+      <Html position={midY as [number, number, number]} center pointerEvents="none" zIndexRange={[70, 0]}>
+        <div className="delta-label y">ΔY</div>
+      </Html>
 
-      {/* Right-angle indicator at corner */}
-      {showVertical && showHorizontal && (
-        <RightAngleIndicator corner={corner} a={a} b={b} />
-      )}
+      <Line points={[p3, p4]} color="#0000cc" lineWidth={1} dashed depthTest={false} renderOrder={997} />
+      <Html position={midZ as [number, number, number]} center pointerEvents="none" zIndexRange={[70, 0]}>
+        <div className="delta-label z">ΔZ</div>
+      </Html>
     </group>
   );
-}
-
-/** Small L-shaped square at the corner to indicate a 90° angle */
-function RightAngleIndicator({
-  corner,
-  a,
-  b,
-}: {
-  corner: THREE.Vector3;
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-}) {
-  const size = corner.distanceTo(a) * 0.04 + corner.distanceTo(b) * 0.02;
-  const s = Math.max(size, 0.005);
-
-  const upDir = a.clone().sub(corner).normalize().multiplyScalar(s);
-  const hDir = b.clone().sub(corner).normalize().multiplyScalar(s);
-
-  const p1 = corner.clone().add(upDir);
-  const p2 = corner.clone().add(upDir).add(hDir);
-  const p3 = corner.clone().add(hDir);
-
-  return (
-    <Line
-      points={[p1, p2, p3]}
-      color={DELTA_COLOR}
-      lineWidth={1}
-      depthTest={false}
-      renderOrder={997}
-      opacity={0.6}
-      transparent
-    />
-  );
-}
+});

@@ -1,0 +1,48 @@
+.meas-badge {
+  background: var(--badge-bg);
+  color: var(--badge-color);
+  border: 1px solid var(--badge-border);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(43, 40, 64, 0.05);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.meas-badge.active {
+  box-shadow: 0 4px 12px rgba(43, 40, 64, 0.15);
+  transform: scale(1.05);
+}
+
+.detail-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  pointer-events: none;
+  min-width: 100px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-label {
+  font-weight: 700;
+}
+
+.detail-label.x { color: #cc0000; }
+.detail-label.y { color: #d9a400; }
+.detail-label.z { color: #0000cc; }

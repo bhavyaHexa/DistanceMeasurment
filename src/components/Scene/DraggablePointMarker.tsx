@@ -1,32 +1,35 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
+import { snapToVertex } from '../../utils/snap';
+import type { Vec3 } from '../../types/measurement';
+import './Markers.css';
 
 interface Props {
-  measurementId: string;
-  which: 'A' | 'B';
-  position: THREE.Vector3;
-  color: string;
+  id: string;
+  end: 'a' | 'b';
+  position: Vec3 | THREE.Vector3;
+  color?: string;
+  isCal?: boolean;
 }
 
 const _raycaster = new THREE.Raycaster();
 const _mouse = new THREE.Vector2();
 
 export const DraggablePointMarker = observer(function DraggablePointMarker({
-  measurementId,
-  which,
+  id,
+  end,
   position,
   color,
+  isCal
 }: Props) {
-  const { model, measurement } = useStores();
-  const { camera, gl, controls } = useThree();
-
+  const { model, measurement, ui } = useStores();
+  const { camera, gl } = useThree();
   const isDragging = useRef(false);
 
-  /** Convert a DOM PointerEvent to normalised device coords [-1, 1] */
   const toNDC = useCallback(
     (e: PointerEvent) => {
       const rect = gl.domElement.getBoundingClientRect();
@@ -38,21 +41,18 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
     [gl],
   );
 
+  useEffect(() => {
+    return () => {
+      if (isDragging.current) measurement.setDragging(null);
+    };
+  }, [measurement]);
+
   const onPointerDown = useCallback(
     (e: any) => {
-      // Only allow dragging when idle (not placing new points)
-      if (measurement.mode !== 'idle') return;
-
       e.stopPropagation();
       isDragging.current = true;
-
-      // Disable orbit/pan so camera doesn't move during point drag
-      if (controls) {
-        (controls as any).enabled = false;
-      }
-
-      gl.domElement.style.cursor = 'grabbing';
-
+      measurement.setDragging(id);
+      
       const onMove = (ev: PointerEvent) => {
         if (!isDragging.current) return;
         const modelScene = model.scene;
@@ -61,7 +61,6 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
         toNDC(ev);
         _raycaster.setFromCamera(_mouse, camera);
 
-        // Collect all renderable meshes inside the loaded model
         const targets: THREE.Mesh[] = [];
         modelScene.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) targets.push(child as THREE.Mesh);
@@ -69,46 +68,46 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
 
         const hits = _raycaster.intersectObjects(targets, false);
         if (hits.length > 0) {
-          measurement.movePoint(measurementId, which, hits[0].point);
+          const hit = hits[0];
+          let point: [number, number, number] = [hit.point.x, hit.point.y, hit.point.z];
+          if (ui.snapToEdges) {
+            const size = { width: gl.domElement.width / gl.getPixelRatio(), height: gl.domElement.height / gl.getPixelRatio() };
+            const snapped = snapToVertex(hit, camera, size);
+            point = snapped.point;
+          }
+          measurement.movePoint(id, end, point);
         }
       };
 
       const onUp = () => {
         isDragging.current = false;
-        if (controls) (controls as any).enabled = true;
-        gl.domElement.style.cursor = '';
+        measurement.setDragging(null);
         gl.domElement.removeEventListener('pointermove', onMove);
-        gl.domElement.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointerup', onUp);
       };
 
       gl.domElement.addEventListener('pointermove', onMove);
-      gl.domElement.addEventListener('pointerup', onUp);
+      window.addEventListener('pointerup', onUp);
     },
-    [camera, controls, gl, measurement, measurementId, model, toNDC, which],
+    [camera, gl, measurement, id, model, toNDC, end, ui.snapToEdges]
   );
 
+  const posArray = Array.isArray(position) ? position : [position.x, position.y, position.z];
+
+  let classes = 'point-marker draggable';
+  if (isDragging.current) classes += ' dragging';
+
   return (
-    <Html position={position} center zIndexRange={[100, 0]}>
+    <Html position={posArray as [number, number, number]} center zIndexRange={[100, 0]}>
       <div
+        className={classes}
         onPointerDown={onPointerDown}
-        onPointerEnter={() => {
-          if (measurement.mode === 'idle') gl.domElement.style.cursor = 'grab';
-        }}
-        onPointerLeave={() => {
-          if (!isDragging.current) gl.domElement.style.cursor = '';
-        }}
         style={{
-          width: '16px',
-          height: '16px',
-          borderRadius: '50%',
-          backgroundColor: color,
-          border: '2px solid white',
-          boxShadow: '0 0 4px rgba(0,0,0,0.5)',
-          cursor: measurement.mode === 'idle' ? 'grab' : 'default',
-          pointerEvents: 'auto',
-          touchAction: 'none',
-        }}
-      />
+          '--marker-color': color || 'var(--primary-strong)',
+        } as React.CSSProperties}
+      >
+        {isCal && <span className="cal-letter">{end.toUpperCase()}</span>}
+      </div>
     </Html>
   );
 });

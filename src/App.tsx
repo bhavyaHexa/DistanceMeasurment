@@ -6,7 +6,6 @@ import { CalibrationPanel } from './components/UI/CalibrationPanel';
 import { MeasurementList } from './components/UI/MeasurementList';
 import { SceneCanvas } from './components/Scene/SceneCanvas';
 import { ConfirmDialog } from './components/UI/ConfirmDialog';
-import { ViewControls } from './components/UI/ViewControls';
 import { StatusBar } from './components/UI/StatusBar';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import './App.css';
@@ -24,7 +23,6 @@ const App = observer(function App() {
         <main className="viewport">
           <SceneCanvas />
           {step === 'load' && <DropzoneOverlay variant="empty" />}
-          {step !== 'load' && <ViewControls />}
           {step !== 'load' && <StatusBar />}
           <DropzoneOverlay variant="drag" />
         </main>

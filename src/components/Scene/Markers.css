@@ -1,0 +1,51 @@
+.point-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--marker-color);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.point-marker.draggable {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  transition: transform 0.1s;
+}
+
+.point-marker.draggable:hover {
+  transform: scale(1.2);
+}
+
+.point-marker.draggable.dragging {
+  cursor: grabbing;
+  transform: scale(1.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.cal-letter {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.snap-ring {
+  width: 24px;
+  height: 24px;
+  border: 2px dashed;
+  border-radius: 50%;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -40,7 +40,7 @@ export const StatusBar = observer(function StatusBar() {
       </div>
       <div className="status-right">
         {ui.step === 'calibrate' ? (
-          <span>Drag background to rotate</span>
+          <span>Left click: Select • Right click: Pan • Scroll: Zoom</span>
         ) : (
           <label className="snap-checkbox">
             <input 
