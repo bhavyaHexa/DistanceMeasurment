@@ -2,7 +2,7 @@ import { Html } from "@react-three/drei";
 import { observer } from "mobx-react-lite";
 import type { Measurement } from "../../types/measurement";
 import { useStores } from "../../stores/StoreContext";
-import { formatDistance } from "../../utils/units";
+import { format, toUnit } from "../../utils/units";
 import "./MeasurementLabel.css";
 
 export const MeasurementDetailBox = observer(function MeasurementDetailBox({
@@ -24,27 +24,7 @@ export const MeasurementDetailBox = observer(function MeasurementDetailBox({
 
   const fmt = (val: number) => {
     if (mps === null) return val.toFixed(2);
-    // val is scene units.
-    // val * mps = meters
-    // meters to display unit = toUnit(val, mps, ui.displayUnit) Wait, toUnit(val, mps, unit) takes (val_in_scene, mps, unit).
-    // Let's look at toUnit:
-    // export function toUnit(sceneDist: number, metersPerSceneUnit: number, targetUnit: Unit): number {
-    //   const meters = sceneDist * metersPerSceneUnit;
-    //   return meters / TO_METERS[targetUnit];
-    // }
-    const meters = val * mps;
-    const converted =
-      meters /
-      (ui.displayUnit === "mm"
-        ? 0.001
-        : ui.displayUnit === "cm"
-          ? 0.01
-          : ui.displayUnit === "m"
-            ? 1
-            : ui.displayUnit === "in"
-              ? 0.0254
-              : 0.3048);
-    return formatDistance(converted, ui.displayUnit);
+    return format(toUnit(val, mps, ui.displayUnit), ui.displayUnit);
   };
 
   const posArray = m.b;
