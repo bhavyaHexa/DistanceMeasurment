@@ -50,7 +50,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (measurement.draggingId) return;
-    if ((ui.step === 'calibrate' && measurement.isAddingCal) || (ui.step === 'measure' && measurement.isAdding)) {
+    if ((ui.step === 'calibrate' && measurement.isAddingCal) || (ui.step === 'measure' && measurement.activeMeasureId !== null)) {
       e.stopPropagation();
       const res = getHitPoint(e);
       measurement.setHoverPoint(res.point);
@@ -82,7 +82,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
       
       if (ui.step === 'calibrate' && measurement.isAddingCal) {
         measurement.placeCalPoint(res.point);
-      } else if (ui.step === 'measure' && measurement.isAdding) {
+      } else if (ui.step === 'measure' && measurement.activeMeasureId !== null) {
         measurement.placePoint(res.point);
       }
     }

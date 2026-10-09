@@ -22,9 +22,7 @@ export class MeasurementStore {
 
   // --- New Measurement Fields ---
   measurements: Measurement[] = [];
-  isAdding: boolean = false;
-  pendingA: Vec3 | null = null;
-  pendingName: string = '';
+  activeMeasureId: string | null = null;
   hoverPoint: Vec3 | null = null;
   selectedId: string | null = null;
   nextColorIndex: number = 0;
@@ -47,6 +45,8 @@ export class MeasurementStore {
       history: observableShallow,
       pendingPoints: observableShallow,
     });
+    // Initialize with one default measurement
+    this.addEmptyMeasurement();
   }
 
   // --- New Computed ---
@@ -120,50 +120,58 @@ export class MeasurementStore {
   }
 
   // --- New Measurement Actions ---
-  setPendingName(name: string) {
-    this.pendingName = name;
+  addEmptyMeasurement() {
+    const measurement: Measurement = {
+      id: makeId(),
+      name: `Measurement ${this.measurements.length + 1}`,
+      a: null,
+      b: null,
+      colorIndex: this.nextColorIndex,
+      visible: true,
+      selectedAxis: 'y',
+      rawDistance: 0,
+    };
+    this.measurements.push(measurement);
+    this.nextColorIndex = (this.nextColorIndex + 1) % 6;
   }
 
-  startAdding() {
-    this.isAdding = true;
-    this.pendingA = null;
-    this.pendingName = `Measurement ${this.measurements.length + 1}`;
-  }
-
-  placePoint(p: Vec3) {
-    if (!this.isAdding) return;
-
-    if (!this.pendingA) {
-      this.pendingA = p;
-    } else {
-      const measurement: Measurement = {
-        id: makeId(),
-        name: this.pendingName || `Measurement ${this.measurements.length + 1}`,
-        a: this.pendingA,
-        b: p,
-        colorIndex: this.nextColorIndex,
-        visible: true,
-        selectedAxis: 'y',
-        rawDistance: distance(this.pendingA, p),
-      };
-      this.measurements.push(measurement);
-      this.nextColorIndex = (this.nextColorIndex + 1) % 6;
-      this.pendingA = null;
-      this.isAdding = false;
-      this.selectedId = measurement.id;
-
-      this.history.push({ type: 'placePoint', measurement });
-      if (this.history.length > 20) this.history.shift();
+  startMeasuringRow(id: string) {
+    const mIndex = this.measurements.findIndex(x => x.id === id);
+    if (mIndex >= 0) {
+      this.measurements[mIndex] = { ...this.measurements[mIndex], a: null, b: null, rawDistance: 0 };
+      this.activeMeasureId = id;
     }
   }
 
-  cancelPending() {
-    this.isAdding = false;
-    this.pendingA = null;
+  cancelMeasuring() {
+    this.activeMeasureId = null;
     // Old compat
     this.mode = 'idle';
     this.pendingPoints = [];
     this.pendingCalibrationRawDistance = null;
+  }
+
+  placePoint(p: Vec3) {
+    if (!this.activeMeasureId) return;
+
+    const mIndex = this.measurements.findIndex(x => x.id === this.activeMeasureId);
+    if (mIndex < 0) return;
+
+    const m = { ...this.measurements[mIndex] };
+
+    if (!m.a) {
+      m.a = p;
+      this.measurements[mIndex] = m;
+    } else if (!m.b) {
+      m.b = p;
+      m.rawDistance = distance(m.a, m.b);
+      this.measurements[mIndex] = m;
+      this.activeMeasureId = null;
+      this.selectedId = m.id;
+
+      this.history.push({ type: 'placePoint', measurement: m });
+      if (this.history.length > 20) this.history.shift();
+    }
   }
 
   setHoverPoint(p: Vec3 | null) {
@@ -199,6 +207,9 @@ export class MeasurementStore {
       if (this.history.length > 20) this.history.shift();
       this.measurements.splice(index, 1);
       if (this.selectedId === id) this.selectedId = null;
+      if (this.measurements.length === 0) {
+        this.addEmptyMeasurement();
+      }
     }
   }
 
@@ -208,6 +219,7 @@ export class MeasurementStore {
       if (this.history.length > 20) this.history.shift();
       this.measurements = [];
       this.selectedId = null;
+      this.addEmptyMeasurement();
     }
   }
 
@@ -226,7 +238,9 @@ export class MeasurementStore {
         const m = { ...this.measurements[mIndex] };
         if (endLower === 'a') m.a = vec;
         if (endLower === 'b') m.b = vec;
-        m.rawDistance = distance(m.a, m.b);
+        if (m.a && m.b) {
+          m.rawDistance = distance(m.a, m.b);
+        }
         this.measurements[mIndex] = m;
       }
     }
@@ -255,6 +269,7 @@ export class MeasurementStore {
   }
 
   displayValue(m: Measurement, unit: Unit): string {
+    if (!m.a || !m.b) return '—';
     const mps = this.metersPerSceneUnit;
     if (mps === null) return '—';
     let sceneDist = 0;
@@ -271,6 +286,7 @@ export class MeasurementStore {
   }
 
   displayEuclideanValue(m: Measurement, unit: Unit): string {
+    if (!m.a || !m.b) return '—';
     const mps = this.metersPerSceneUnit;
     if (mps === null) return '—';
     const sceneDist = distance(m.a, m.b);
@@ -278,6 +294,7 @@ export class MeasurementStore {
   }
 
   displayDeltaValue(m: Measurement, axis: 'x'|'y'|'z', unit: Unit): string {
+    if (!m.a || !m.b) return '—';
     const mps = this.metersPerSceneUnit;
     if (mps === null) return '—';
     const idx = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
@@ -296,7 +313,7 @@ export class MeasurementStore {
     csv += 'name,value,unit,dx,dy,dz,ax,ay,az,bx,by,bz\n';
     
     for (const m of this.measurements) {
-      if (!m.visible) continue;
+      if (!m.visible || !m.a || !m.b) continue;
       const sceneDist = distance(m.a, m.b);
       const val = mps !== null ? toUnit(sceneDist, mps, unit).toFixed(2) : '';
       
@@ -323,6 +340,12 @@ export class MeasurementStore {
   startMeasurement() {
     this.mode = 'placing-measurement';
     this.pendingPoints = [];
+  }
+
+  cancelPending() {
+    this.mode = 'idle';
+    this.pendingPoints = [];
+    this.pendingCalibrationRawDistance = null;
   }
 
   addPoint(point: THREE.Vector3) {

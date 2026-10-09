@@ -5,8 +5,8 @@ export type Vec3 = [number, number, number];
 export interface Measurement {
   id: string;
   name: string;        // default "Measurement N"
-  a: Vec3;             // scene units
-  b: Vec3;             // scene units
+  a: Vec3 | null;      // scene units
+  b: Vec3 | null;      // scene units
   colorIndex: number;  // index into MEASURE_COLORS
   visible: boolean;    // default true
   selectedAxis?: 'euclidean' | 'x' | 'y' | 'z';

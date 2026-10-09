@@ -47,27 +47,11 @@ export const MeasurementList = observer(function MeasurementList() {
         
         <div className="list-title-row">
           <h2 className="panel-title">Measurements</h2>
-          <button 
-            className="btn-outline-sm" 
-            onClick={() => {
-              ui.goToMeasure();
-              measurement.startAdding();
-              measurement.select(null);
-              setEditingPending(true);
-            }}
-          >
-            + Add
-          </button>
         </div>
       </div>
 
-      <div className="panel-content" style={{ padding: 0 }}>
-        {measurement.measurements.length === 0 && !measurement.isAdding ? (
-          <div className="empty-list-state">
-            Click on the model to add your first measurement.
-          </div>
-        ) : (
-          <ul className="meas-list">
+      <div className="panel-content" style={{ padding: 0 }} onClick={() => measurement.select(null)}>
+        <ul className="meas-list">
             {measurement.measurements.map(m => {
               const isSelected = measurement.selectedId === m.id;
               const colorObj = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length];
@@ -105,8 +89,29 @@ export const MeasurementList = observer(function MeasurementList() {
                       )}
                     </div>
 
-                    <div className="meas-value">{measurement.displayValue(m, ui.displayUnit)}</div>
+                    <div className="meas-value">
+                      {(!m.a || !m.b) ? (
+                        <button 
+                          className={`btn-outline-sm measure-btn ${measurement.activeMeasureId === m.id ? 'active' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (measurement.activeMeasureId === m.id) {
+                              measurement.cancelMeasuring();
+                            } else {
+                              ui.goToMeasure();
+                              measurement.startMeasuringRow(m.id);
+                            }
+                          }}
+                          style={{ fontSize: '11px', padding: '2px 8px' }}
+                        >
+                          {measurement.activeMeasureId === m.id ? 'Placing...' : 'Measure'}
+                        </button>
+                      ) : (
+                        measurement.displayValue(m, ui.displayUnit)
+                      )}
+                    </div>
                     
+
                     <button 
                       className="btn-icon delete-btn" 
                       onClick={(e) => {
@@ -147,49 +152,20 @@ export const MeasurementList = observer(function MeasurementList() {
               );
             })}
             
-            {measurement.isAdding && (
-              <li 
-                className={`meas-row-container ${measurement.selectedId === null ? 'selected' : ''}`}
-                onClick={() => measurement.select(null)}
-              >
-                <div className="meas-row-main">
-                  <div 
-                    className="meas-dot" 
-                    style={{ background: MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line }}
-                  />
-                  
-                  <div className="meas-name-col">
-                    {editingPending ? (
-                      <input 
-                        autoFocus
-                        className="meas-edit-input"
-                        value={measurement.pendingName}
-                        onChange={(e) => measurement.setPendingName(e.target.value)}
-                        onBlur={() => setEditingPending(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') setEditingPending(false);
-                        }}
-                      />
-                    ) : (
-                      <div className="meas-name" onDoubleClick={() => setEditingPending(true)}>
-                        {measurement.pendingName}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="meas-value" style={{ opacity: 0.5 }}>—</div>
-                  
-                  <button 
-                    className="btn-icon delete-btn" 
-                    onClick={() => measurement.cancelPending()}
-                  >
-                    ×
-                  </button>
-                </div>
-              </li>
-            )}
           </ul>
-        )}
+        
+        <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+            className="btn-outline-sm" 
+            style={{ padding: '4px 16px', fontSize: '12px' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              measurement.addEmptyMeasurement();
+            }}
+          >
+            + Add
+          </button>
+        </div>
       </div>
 
       {measurement.measurements.length > 0 && (

@@ -163,3 +163,20 @@
 .axis-option.x .axis-opt-title { color: #cc0000; }
 .axis-option.y .axis-opt-title { color: #d9a400; }
 .axis-option.z .axis-opt-title { color: #0000cc; }
+
+.measure-btn {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+.measure-btn:hover {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+.measure-btn.active {
+  background: var(--primary-fill);
+  color: var(--text);
+  border-color: var(--primary-line);
+}
+.meas-row-container.active-measuring {
+  border-left: 3px solid var(--primary-line);
+}

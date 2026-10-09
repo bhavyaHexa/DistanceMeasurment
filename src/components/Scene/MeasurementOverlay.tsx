@@ -39,7 +39,21 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
       {/* 2. Measure step */}
       {ui.step === 'measure' && measurement.measurements.map(m => {
         if (!m.visible) return null;
+        if (!m.a) return null;
+
         const color = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length].line;
+
+        // Pending first point
+        if (m.a && !m.b) {
+          return (
+            <group key={m.id}>
+              <PointMarker position={m.a} color={color} />
+            </group>
+          );
+        }
+
+        if (!m.a || !m.b) return null;
+
         const isSelected = measurement.selectedId === m.id;
         const isDraggingThis = measurement.draggingId === m.id;
         
@@ -64,13 +78,6 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
           </group>
         );
       })}
-
-      {/* 3. Pending Measurement */}
-      {ui.step === 'measure' && measurement.pendingA && (
-        <group>
-          <PointMarker position={measurement.pendingA} color={MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line} />
-        </group>
-      )}
 
       {/* Snap ring */}
       {ui.snapToEdges && measurement.hoverPoint && !measurement.draggingId && (
