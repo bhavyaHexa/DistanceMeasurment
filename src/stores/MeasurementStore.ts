@@ -52,9 +52,9 @@ export class MeasurementStore {
   // --- New Computed ---
   get metersPerSceneUnit(): number | null {
     if (!this.calA || !this.calB || !this.calLength) return null;
-    const dist = distance(this.calA, this.calB);
-    if (dist === 0) return null;
-    return (this.calLength * TO_METERS[this.calUnit]) / dist;
+    const distY = Math.abs(this.calA[1] - this.calB[1]);
+    if (distY === 0) return null;
+    return (this.calLength * TO_METERS[this.calUnit]) / distY;
   }
 
   get isCalibrated(): boolean {
@@ -250,6 +250,14 @@ export class MeasurementStore {
     const mps = this.metersPerSceneUnit;
     if (mps === null) return '—';
     const sceneDist = distance(m.a, m.b);
+    return format(toUnit(sceneDist, mps, unit), unit);
+  }
+
+  displayDeltaValue(m: Measurement, axis: 'x'|'y'|'z', unit: Unit): string {
+    const mps = this.metersPerSceneUnit;
+    if (mps === null) return '—';
+    const idx = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
+    const sceneDist = Math.abs(m.a[idx] - m.b[idx]);
     return format(toUnit(sceneDist, mps, unit), unit);
   }
 

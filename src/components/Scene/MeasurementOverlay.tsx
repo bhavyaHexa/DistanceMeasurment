@@ -17,11 +17,15 @@ export const MeasurementOverlay = observer(function MeasurementOverlay() {
       {ui.step === 'calibrate' && (
         <group>
           {measurement.calDraft.a && measurement.calDraft.b && (
-            <MeasurementLine 
-              a={measurement.calDraft.a} 
-              b={measurement.calDraft.b} 
-              color="var(--cal-line)" 
-            />
+            <>
+              <MeasurementLine 
+                a={measurement.calDraft.a} 
+                b={measurement.calDraft.b} 
+                color="var(--cal-line)" 
+              />
+              <DeltaLines m={{ a: measurement.calDraft.a, b: measurement.calDraft.b } as any} />
+              <MeasurementDetailBox m={{ a: measurement.calDraft.a, b: measurement.calDraft.b } as any} />
+            </>
           )}
           {measurement.calDraft.a && (
             <DraggablePointMarker id="cal" end="a" position={measurement.calDraft.a} isCal />
