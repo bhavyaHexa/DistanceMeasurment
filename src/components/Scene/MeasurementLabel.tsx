@@ -30,8 +30,8 @@ export const MeasurementLabel = observer(function MeasurementLabel({ m }: { m: M
       <div 
         className={classes} 
         style={{
-          '--badge-bg': isSelected ? colorObj.line : colorObj.bg,
-          '--badge-color': isSelected ? '#fff' : colorObj.line,
+          '--badge-bg': isSelected ? colorObj.line : colorObj.tagBg,
+          '--badge-color': isSelected ? '#fff' : colorObj.tagText,
           '--badge-border': colorObj.line
         } as React.CSSProperties}
       >
