@@ -33,17 +33,22 @@
   margin: 0;
 }
 
-.meas-row {
+.meas-row-container {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.meas-row-container:hover { background: var(--bg-raised); }
+.meas-row-container.selected { background: var(--bg-selected); }
+
+.meas-row-main {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border);
   cursor: pointer;
-  background: var(--bg-surface);
 }
-.meas-row:hover { background: var(--bg-raised); }
-.meas-row.selected { background: var(--bg-selected); }
 
 .meas-dot {
   width: 12px;
@@ -102,5 +107,59 @@
   color: var(--text-muted);
 }
 
-.meas-row:hover .delete-btn { opacity: 1; }
+.meas-row-container:hover .delete-btn { opacity: 1; }
 .delete-btn:hover { color: var(--danger) !important; }
+
+/* Axis Selector Styles */
+.meas-axis-selector {
+  padding: 0 var(--space-4) var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.axis-label {
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+  margin-left: 20px; /* align with text */
+}
+
+.axis-options-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-left: 20px;
+}
+
+.axis-option {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.axis-option:hover {
+  border-color: var(--primary-line);
+}
+
+.axis-option.active {
+  background: var(--primary-fill);
+  border-color: var(--primary-line);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.axis-opt-title {
+  font-weight: 600;
+}
+
+.axis-option.x .axis-opt-title { color: #cc0000; }
+.axis-option.y .axis-opt-title { color: #d9a400; }
+.axis-option.z .axis-opt-title { color: #0000cc; }

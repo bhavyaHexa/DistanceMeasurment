@@ -143,6 +143,7 @@ export class MeasurementStore {
         b: p,
         colorIndex: this.nextColorIndex,
         visible: true,
+        selectedAxis: 'y',
         rawDistance: distance(this.pendingA, p),
       };
       this.measurements.push(measurement);
@@ -176,6 +177,13 @@ export class MeasurementStore {
   rename(id: string, name: string) {
     const m = this.measurements.find(x => x.id === id);
     if (m) m.name = name;
+  }
+
+  setMeasurementAxis(id: string, axis: 'euclidean' | 'x' | 'y' | 'z') {
+    const mIndex = this.measurements.findIndex(x => x.id === id);
+    if (mIndex >= 0) {
+      this.measurements[mIndex] = { ...this.measurements[mIndex], selectedAxis: axis };
+    }
   }
 
   toggleVisible(id: string) {
@@ -247,6 +255,22 @@ export class MeasurementStore {
   }
 
   displayValue(m: Measurement, unit: Unit): string {
+    const mps = this.metersPerSceneUnit;
+    if (mps === null) return '—';
+    let sceneDist = 0;
+    if (m.selectedAxis === 'x') {
+      sceneDist = Math.abs(m.a[0] - m.b[0]);
+    } else if (m.selectedAxis === 'y') {
+      sceneDist = Math.abs(m.a[1] - m.b[1]);
+    } else if (m.selectedAxis === 'z') {
+      sceneDist = Math.abs(m.a[2] - m.b[2]);
+    } else {
+      sceneDist = distance(m.a, m.b);
+    }
+    return format(toUnit(sceneDist, mps, unit), unit);
+  }
+
+  displayEuclideanValue(m: Measurement, unit: Unit): string {
     const mps = this.metersPerSceneUnit;
     if (mps === null) return '—';
     const sceneDist = distance(m.a, m.b);

@@ -9,6 +9,7 @@ export interface Measurement {
   b: Vec3;             // scene units
   colorIndex: number;  // index into MEASURE_COLORS
   visible: boolean;    // default true
+  selectedAxis?: 'euclidean' | 'x' | 'y' | 'z';
   
   // Keep old fields optionally for Layer 1-4 compatibility
   kind?: MeasurementKind;

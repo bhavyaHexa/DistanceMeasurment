@@ -75,84 +75,117 @@ export const MeasurementList = observer(function MeasurementList() {
               return (
                 <li 
                   key={m.id} 
-                  className={`meas-row ${isSelected ? 'selected' : ''} ${!m.visible ? 'hidden' : ''}`}
-                  onClick={() => measurement.select(m.id)}
+                  className={`meas-row-container ${isSelected ? 'selected' : ''} ${!m.visible ? 'hidden' : ''}`}
+                  onClick={() => measurement.select(isSelected ? null : m.id)}
                 >
-                  <div 
-                    className="meas-dot" 
-                    style={{ background: colorObj.line, opacity: m.visible ? 1 : 0.4 }}
-                    onClick={(e) => { e.stopPropagation(); measurement.toggleVisible(m.id); }}
-                  />
-                  
-                  <div className="meas-name-col">
-                    {editingId === m.id ? (
-                      <input 
-                        autoFocus
-                        className="meas-edit-input"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onBlur={saveEdit}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit();
-                          if (e.key === 'Escape') setEditingId(null);
-                        }}
-                      />
-                    ) : (
-                      <div className="meas-name" onDoubleClick={() => startEdit(m.id, m.name)}>
-                        {m.name}
-                      </div>
-                    )}
-                  </div>
+                  <div className="meas-row-main">
+                    <div 
+                      className="meas-dot" 
+                      style={{ background: colorObj.line, opacity: m.visible ? 1 : 0.4 }}
+                      onClick={(e) => { e.stopPropagation(); measurement.toggleVisible(m.id); }}
+                    />
+                    
+                    <div className="meas-name-col">
+                      {editingId === m.id ? (
+                        <input 
+                          autoFocus
+                          className="meas-edit-input"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onBlur={saveEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                        />
+                      ) : (
+                        <div className="meas-name" onDoubleClick={() => startEdit(m.id, m.name)}>
+                          {m.name}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="meas-value">{measurement.displayValue(m, ui.displayUnit)}</div>
+                    <div className="meas-value">{measurement.displayValue(m, ui.displayUnit)}</div>
+                    
+                    <button 
+                      className="btn-icon delete-btn" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        measurement.remove(m.id);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
                   
-                  <button 
-                    className="btn-icon delete-btn" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      measurement.remove(m.id);
-                    }}
-                  >
-                    ×
-                  </button>
+                  {isSelected && (
+                    <div className="meas-axis-selector">
+                      <div className="axis-label">Use distance:</div>
+                      <div className="axis-options-row">
+                        <div 
+                          className={`axis-option x ${m.selectedAxis === 'x' ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); measurement.setMeasurementAxis(m.id, 'x'); }}
+                        >
+                          <span className="axis-opt-title">ΔX</span> {measurement.displayDeltaValue(m, 'x', ui.displayUnit)}
+                        </div>
+                        <div 
+                          className={`axis-option y ${m.selectedAxis === 'y' ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); measurement.setMeasurementAxis(m.id, 'y'); }}
+                        >
+                          <span className="axis-opt-title">ΔY</span> {measurement.displayDeltaValue(m, 'y', ui.displayUnit)}
+                        </div>
+                        <div 
+                          className={`axis-option z ${m.selectedAxis === 'z' ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); measurement.setMeasurementAxis(m.id, 'z'); }}
+                        >
+                          <span className="axis-opt-title">ΔZ</span> {measurement.displayDeltaValue(m, 'z', ui.displayUnit)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </li>
               );
             })}
             
             {measurement.isAdding && (
-              <li className="meas-row selected">
-                <div 
-                  className="meas-dot" 
-                  style={{ background: MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line }}
-                />
-                
-                <div className="meas-name-col">
-                  {editingPending ? (
-                    <input 
-                      autoFocus
-                      className="meas-edit-input"
-                      value={measurement.pendingName}
-                      onChange={(e) => measurement.setPendingName(e.target.value)}
-                      onBlur={() => setEditingPending(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') setEditingPending(false);
-                      }}
-                    />
-                  ) : (
-                    <div className="meas-name" onDoubleClick={() => setEditingPending(true)}>
-                      {measurement.pendingName}
-                    </div>
-                  )}
-                </div>
+              <li 
+                className={`meas-row-container ${measurement.selectedId === null ? 'selected' : ''}`}
+                onClick={() => measurement.select(null)}
+              >
+                <div className="meas-row-main">
+                  <div 
+                    className="meas-dot" 
+                    style={{ background: MEASURE_COLORS[measurement.nextColorIndex % MEASURE_COLORS.length].line }}
+                  />
+                  
+                  <div className="meas-name-col">
+                    {editingPending ? (
+                      <input 
+                        autoFocus
+                        className="meas-edit-input"
+                        value={measurement.pendingName}
+                        onChange={(e) => measurement.setPendingName(e.target.value)}
+                        onBlur={() => setEditingPending(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') setEditingPending(false);
+                        }}
+                      />
+                    ) : (
+                      <div className="meas-name" onDoubleClick={() => setEditingPending(true)}>
+                        {measurement.pendingName}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="meas-value" style={{ opacity: 0.5 }}>—</div>
-                
-                <button 
-                  className="btn-icon delete-btn" 
-                  onClick={() => measurement.cancelPending()}
-                >
-                  ×
-                </button>
+                  <div className="meas-value" style={{ opacity: 0.5 }}>—</div>
+                  
+                  <button 
+                    className="btn-icon delete-btn" 
+                    onClick={() => measurement.cancelPending()}
+                  >
+                    ×
+                  </button>
+                </div>
               </li>
             )}
           </ul>
