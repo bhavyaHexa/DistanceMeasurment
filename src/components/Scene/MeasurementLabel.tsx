@@ -8,6 +8,8 @@ import './MeasurementLabel.css';
 export const MeasurementLabel = observer(function MeasurementLabel({ m }: { m: Measurement }) {
   const { measurement, ui } = useStores();
 
+  if (!m.a || !m.b) return null;
+
   const isSelected = measurement.selectedId === m.id;
   const colorObj = MEASURE_COLORS[m.colorIndex % MEASURE_COLORS.length];
   

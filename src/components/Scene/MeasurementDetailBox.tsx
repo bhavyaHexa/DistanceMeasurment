@@ -12,6 +12,8 @@ export const MeasurementDetailBox = observer(function MeasurementDetailBox({
 }) {
   const { ui, measurement } = useStores();
 
+  if (!m.a || !m.b) return null;
+
   const dx = Math.abs(m.a[0] - m.b[0]);
   const dy = Math.abs(m.a[1] - m.b[1]);
   const dz = Math.abs(m.a[2] - m.b[2]);

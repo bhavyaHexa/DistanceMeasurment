@@ -23,7 +23,10 @@ export const StatusBar = observer(function StatusBar() {
       dotColor = 'var(--success)';
     }
   } else if (ui.step === 'measure') {
-    if (measurement.pendingA) {
+    const activeMeasurement = measurement.measurements.find(
+      (m) => m.id === measurement.activeMeasureId
+    );
+    if (activeMeasurement?.a) {
       hintText = 'Click to place the end point.';
       dotColor = 'var(--primary)';
     } else {

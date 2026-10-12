@@ -10,7 +10,6 @@ export const MeasurementList = observer(function MeasurementList() {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editingPending, setEditingPending] = useState(false);
 
   const startEdit = (id: string, name: string) => {
     setEditingId(id);

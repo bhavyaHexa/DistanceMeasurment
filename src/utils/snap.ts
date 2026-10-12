@@ -10,7 +10,7 @@ export function snapToVertex(
 ): { point: [number, number, number]; snapped: boolean } {
   const mesh = hit.object as THREE.Mesh;
   const geometry = mesh.geometry as THREE.BufferGeometry;
-  if (!geometry || !geometry.attributes.position || hit.faceIndex === undefined) {
+  if (!geometry || !geometry.attributes.position || hit.faceIndex == null) {
     return { point: [hit.point.x, hit.point.y, hit.point.z], snapped: false };
   }
 

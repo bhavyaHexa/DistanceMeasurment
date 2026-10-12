@@ -4,6 +4,8 @@ import type { Measurement } from '../../types/measurement';
 import './DeltaLabels.css';
 
 export const DeltaLines = observer(function DeltaLines({ m }: { m: Measurement }) {
+  if (!m.a || !m.b) return null;
+
   const p1: [number, number, number] = [m.a[0], m.a[1], m.a[2]];
   const pY: [number, number, number] = [m.a[0], m.b[1], m.a[2]];
   const pX: [number, number, number] = [m.b[0], m.b[1], m.a[2]];
