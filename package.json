@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "vercel-build": "vercel --prod",
+    "vercel-build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
-  
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
