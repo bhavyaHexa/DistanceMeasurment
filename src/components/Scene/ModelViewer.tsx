@@ -6,12 +6,13 @@ import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
 import { disposeObject3D } from '../../utils/disposeObject';
 import { snapToVertex } from '../../utils/snap';
+import type { Vec3 } from '../../types/measurement';
 
 export const ModelViewer = observer(function ModelViewer({ url }: { url: string }) {
   const gltf = useGLTF(url);
   const { model, measurement, ui } = useStores();
   const sceneRef = useRef(gltf.scene);
-  const pointerDownPos = useRef<{ x: number; y: number; time: number } | null>(null);
+  const pointerDownPos = useRef<{ x: number; y: number; time: number; point: Vec3 } | null>(null);
   const { progress } = useProgress();
   const { size } = useThree();
 
@@ -65,25 +66,29 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
   };
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    pointerDownPos.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+    // R3F calls this once per intersected child mesh, nearest first — keep only the nearest.
+    e.stopPropagation();
+    // Resolve the point at press time: that's where the user aimed. The cursor can drift
+    // up to 15px before release, which would otherwise shift the placed point.
+    pointerDownPos.current = { x: e.clientX, y: e.clientY, time: Date.now(), point: getHitPoint(e).point };
   };
 
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
-    if (!pointerDownPos.current) return;
-    const dx = e.clientX - pointerDownPos.current.x;
-    const dy = e.clientY - pointerDownPos.current.y;
-    const dt = Date.now() - pointerDownPos.current.time;
+    const down = pointerDownPos.current;
+    if (!down) return;
+    const dx = e.clientX - down.x;
+    const dy = e.clientY - down.y;
+    const dt = Date.now() - down.time;
     pointerDownPos.current = null;
 
     // Allow up to 15 pixels of movement and 500ms for a click to make placement smoother
     if (Math.abs(dx) < 15 && Math.abs(dy) < 15 && dt < 500) {
       e.stopPropagation();
-      const res = getHitPoint(e);
-      
+
       if (ui.step === 'calibrate' && measurement.isAddingCal) {
-        measurement.placeCalPoint(res.point);
+        measurement.placeCalPoint(down.point);
       } else if (ui.step === 'measure' && measurement.activeMeasureId !== null) {
-        measurement.placePoint(res.point);
+        measurement.placePoint(down.point);
       }
     }
   };
