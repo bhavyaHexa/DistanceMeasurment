@@ -27,7 +27,7 @@ export const SceneCanvas = observer(function SceneCanvas() {
     >
       <color attach="background" args={[BACKGROUND]} />
       {/* Ambient is high because three.js scales it by 1/π; the directional lights only add gentle shape. */}
-      <ambientLight intensity={2.4} />
+      <ambientLight intensity={2} />
       <directionalLight position={[5, 10, 5]} intensity={1} />
       <directionalLight position={[-5, 4, -5]} intensity={0.5} />
 

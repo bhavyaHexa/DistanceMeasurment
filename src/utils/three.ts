@@ -13,6 +13,24 @@ export function placeOnGround(object: THREE.Object3D): number {
   return bounds.getBoundingSphere(new THREE.Sphere()).radius;
 }
 
+/**
+ * Makes every material on `root` matte. Converted scans often come out fully metallic (the glTF
+ * default), which renders near-black without an environment map to reflect.
+ */
+export function makeMatte(root: THREE.Object3D) {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+      material.metalness = 0;
+      material.roughness = 1;
+      material.needsUpdate = true;
+    }
+  });
+}
+
 /** Frees the GPU resources (geometry, materials, textures) held by `root` and its children. */
 export function disposeObject3D(root: THREE.Object3D) {
   root.traverse((obj) => {
