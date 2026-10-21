@@ -1,53 +1,54 @@
 import { useEffect } from 'react';
-import { useStores } from '../stores/StoreContext';
+import { useStores } from './useStores';
 
+function isTyping(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
+  return !!element && (['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || element.isContentEditable);
+}
+
+/**
+ * Workspace shortcuts: Esc cancels placement, Ctrl/⌘+Z undoes, Delete removes the selected
+ * measurement, R / P switch rotate / pan, F fits the model in view.
+ */
 export function useKeyboardShortcuts() {
-  const { ui, measurement } = useStores();
+  const { ui, history, measurements, viewer, workspace } = useStores();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input/textarea
-      const target = e.target as HTMLElement;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isTyping(event.target) || ui.confirmRequest) return;
+      const withModifier = event.ctrlKey || event.metaKey;
+
+      if (withModifier && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        history.undo();
         return;
       }
+      if (withModifier || event.altKey) return;
 
-      switch (e.key) {
+      switch (event.key) {
         case 'Escape':
-          if (ui.confirm) {
-            ui.closeConfirm();
-          } else {
-            measurement.cancelPending();
-          }
-          break;
-        case 'z':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            measurement.undo();
-          }
+          workspace.cancelInteraction();
           break;
         case 'Delete':
         case 'Backspace':
-          if (measurement.selectedId) {
-            measurement.remove(measurement.selectedId);
-          }
+          if (measurements.selectedId) measurements.remove(measurements.selectedId);
           break;
         case 'r':
         case 'R':
-          ui.setViewTool('rotate');
+          viewer.setViewTool('rotate');
           break;
         case 'p':
         case 'P':
-          ui.setViewTool('pan');
+          viewer.setViewTool('pan');
           break;
         case 'f':
         case 'F':
-          ui.requestFit();
+          viewer.requestFit();
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [ui, measurement]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [ui, history, measurements, viewer, workspace]);
 }
