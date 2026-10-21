@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
 import { disposeObject3D } from '../../utils/disposeObject';
-import { snapToVertex } from '../../utils/snap';
+import { findSnap } from '../../utils/snap';
 import type { Vec3 } from '../../types/measurement';
 
 export const ModelViewer = observer(function ModelViewer({ url }: { url: string }) {
@@ -14,7 +14,7 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
   const sceneRef = useRef(gltf.scene);
   const pointerDownPos = useRef<{ x: number; y: number; time: number; point: Vec3 } | null>(null);
   const { progress } = useProgress();
-  const { size } = useThree();
+  const { gl } = useThree();
 
   useEffect(() => {
     if (!model.isLoaded && model.loadProgress !== null) {
@@ -41,12 +41,14 @@ export const ModelViewer = observer(function ModelViewer({ url }: { url: string 
     };
   }, [gltf, model, ui]);
 
-  const getHitPoint = (e: ThreeEvent<PointerEvent>) => {
-    if (!ui.snapToEdges || !e.intersections || e.intersections.length === 0) {
-      return { point: [e.point.x, e.point.y, e.point.z] as [number, number, number], snapped: false };
+  const getHitPoint = (e: ThreeEvent<PointerEvent>): { point: Vec3; snapped: boolean } => {
+    if (ui.snapToEdges && model.scene) {
+      // Snaps to a nearby feature vertex/edge — including the near edge when the cursor
+      // slips just past a silhouette and the ray hits a surface far behind it.
+      const snap = findSnap(e.clientX, e.clientY, e.camera, gl.domElement, model.scene);
+      if (snap) return { point: snap.point.toArray(), snapped: snap.kind !== 'surface' };
     }
-    const hit = e.intersections[0];
-    return snapToVertex(hit, e.camera as THREE.PerspectiveCamera, size, e.pointer);
+    return { point: [e.point.x, e.point.y, e.point.z], snapped: false };
   };
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {

@@ -4,7 +4,7 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { observer } from 'mobx-react-lite';
 import { useStores } from '../../stores/StoreContext';
-import { snapToVertex } from '../../utils/snap';
+import { findSnap } from '../../utils/snap';
 import type { Vec3 } from '../../types/measurement';
 import './Markers.css';
 
@@ -69,11 +69,10 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
         const hits = _raycaster.intersectObjects(targets, false);
         if (hits.length > 0) {
           const hit = hits[0];
-          let point: [number, number, number] = [hit.point.x, hit.point.y, hit.point.z];
+          let point: Vec3 = [hit.point.x, hit.point.y, hit.point.z];
           if (ui.snapToEdges) {
-            const size = { width: gl.domElement.width / gl.getPixelRatio(), height: gl.domElement.height / gl.getPixelRatio() };
-            const snapped = snapToVertex(hit, camera, size, _mouse);
-            point = snapped.point;
+            const snap = findSnap(ev.clientX, ev.clientY, camera, gl.domElement, modelScene);
+            if (snap) point = snap.point.toArray();
           }
           measurement.movePoint(id, end, point);
         }
