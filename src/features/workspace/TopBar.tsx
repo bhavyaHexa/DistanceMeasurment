@@ -1,8 +1,9 @@
 import { observer } from 'mobx-react-lite';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Download } from 'lucide-react';
 import { Link } from 'react-router';
 import { LogoMark } from '@/components/Logo';
 import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
 import { Select } from '@/components/ui/Select';
 import { useStores } from '@/hooks/useStores';
 import { UNITS } from '@/utils/units';
@@ -43,6 +44,14 @@ export const TopBar = observer(function TopBar() {
             value={workspace.displayUnit}
             options={UNITS}
             onChange={workspace.setDisplayUnit}
+          />
+        )}
+        {workspace.step !== 'upload' && (
+          <IconButton
+            icon={Download}
+            label="Download 3D model (.glb)"
+            disabled={!project.canDownloadModel}
+            onClick={project.downloadModel}
           />
         )}
         <Button

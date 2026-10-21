@@ -4,6 +4,7 @@ import { runsApi } from '@/services/runsApi';
 import type { RunStatus } from '@/types/api';
 import type { SavedMeasurementData } from '@/types/projectFile';
 import type { UploadPhase } from '@/types/workspace';
+import { downloadFromUrl, toFileStem } from '@/utils/download';
 import { buildProjectFile, parseProjectFile } from '@/utils/projectFile';
 import { prepareScanZip, type PreparedScan } from '@/utils/zip';
 import type { RootStore } from './RootStore';
@@ -23,6 +24,7 @@ export class ProjectStore {
 
   isSaving = false;
   saveError: string | null = null;
+  isDownloadingModel = false;
   /** Snapshot of the data at the last save/open, used to detect unsaved changes. */
   private savedSnapshot: string | null = null;
   private uploadAbort: AbortController | null = null;
@@ -74,6 +76,20 @@ export class ProjectStore {
     const { model } = this.root;
     if (model.url && !model.isLoaded && !model.error) return { index: 3, percent: model.loadProgress };
     return null;
+  }
+
+  get canDownloadModel(): boolean {
+    return this.root.model.isLoaded && this.root.model.url !== null && !this.isDownloadingModel;
+  }
+
+  async downloadModel() {
+    const url = this.root.model.url;
+    if (!url || this.isDownloadingModel) return;
+    this.isDownloadingModel = true;
+    await downloadFromUrl(`${toFileStem(this.name)}.glb`, url);
+    runInAction(() => {
+      this.isDownloadingModel = false;
+    });
   }
 
   get canCancelUpload(): boolean {
