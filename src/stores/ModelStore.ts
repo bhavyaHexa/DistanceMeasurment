@@ -1,101 +1,56 @@
-import { makeAutoObservable, observableRef } from 'mobx';
-import * as THREE from 'three';
+import { makeAutoObservable } from 'mobx';
+import type * as THREE from 'three';
 
+/** The converted 3D model shown in the viewer. */
 export class ModelStore {
-  // --- Old fields (kept for compatibility) ---
-  fileName: string | null = null;
-  objectUrl: string | null = null;
-  boundingBox: THREE.Box3 | null = null;
-  boundingSphereRadius = 1;
-  scene: THREE.Object3D | null = null;
-  _oldIsLoaded = false;
-
-  // --- New fields (Layer 1) ---
-  file: { name: string; sizeBytes: number; url: string } | null = null;
+  url: string | null = null;
+  isLoaded = false;
+  /** 0–100 while the GLB downloads, otherwise null. */
   loadProgress: number | null = null;
   error: string | null = null;
-  _isLoaded = false;
+  boundingRadius = 1;
+  /** The loaded scene graph, kept for raycasting. Not observable. */
+  scene: THREE.Object3D | null = null;
 
   constructor() {
-    makeAutoObservable(this, {
-      boundingBox: observableRef,
-      scene: false,
-    });
+    makeAutoObservable(this, { scene: false }, { autoBind: true });
   }
 
-  // --- New methods ---
-  get isLoaded(): boolean {
-    return this._isLoaded;
+  /** Ground grid sized to the model. */
+  get grid(): { size: number; divisions: number } {
+    return this.isLoaded
+      ? { size: Math.max(10, Math.ceil(this.boundingRadius * 5)), divisions: 50 }
+      : { size: 10, divisions: 10 };
   }
 
-  setFile(file: File) {
+  load(url: string) {
     this.reset();
-    const url = URL.createObjectURL(file);
-    this.file = { name: file.name, sizeBytes: file.size, url };
-    this.error = null;
+    this.url = url;
     this.loadProgress = 0;
-    
-    // Compatibility updates
-    this.fileName = file.name;
-    this.objectUrl = url;
   }
 
-  setRemoteModel(name: string, glbUrl: string) {
-    this.reset();
-    this.file = { name, sizeBytes: 0, url: glbUrl };
-    this.error = null;
-    this.loadProgress = 0;
-
-    // Compatibility updates
-    this.fileName = name;
-    this.objectUrl = glbUrl;
+  setProgress(percent: number) {
+    if (!this.isLoaded) this.loadProgress = percent;
   }
 
-  setLoaded(box?: THREE.Box3) {
-    this._isLoaded = true;
+  setLoaded(scene: THREE.Object3D, boundingRadius: number) {
+    this.scene = scene;
+    this.isLoaded = true;
     this.loadProgress = null;
-    
-    // Compatibility
-    this._oldIsLoaded = true;
-    if (box) {
-      this.boundingBox = box;
-      const sphere = new THREE.Sphere();
-      box.getBoundingSphere(sphere);
-      this.boundingSphereRadius = sphere.radius || 1;
-    }
+    this.boundingRadius = boundingRadius || 1;
   }
 
-  setError(msg: string) {
-    this.error = msg;
+  setError(message: string) {
+    this.error = message;
     this.loadProgress = null;
-  }
-
-  setProgress(n: number | null) {
-    this.loadProgress = n;
   }
 
   reset() {
-    if (this.file) URL.revokeObjectURL(this.file.url);
-    this.file = null;
+    this.url = null;
+    this.isLoaded = false;
     this.loadProgress = null;
     this.error = null;
-    this._isLoaded = false;
-
-    // Compatibility
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    this.fileName = null;
-    this.objectUrl = null;
-    this._oldIsLoaded = false;
-    this.boundingBox = null;
-    this.boundingSphereRadius = 1;
-  }
-
-  // --- Old methods (kept for compatibility) ---
-  setScene(scene: THREE.Object3D | null) {
-    this.scene = scene;
-  }
-
-  clear() {
-    this.reset();
+    this.boundingRadius = 1;
+    this.scene = null;
   }
 }

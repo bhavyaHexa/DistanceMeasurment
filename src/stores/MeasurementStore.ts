@@ -1,490 +1,211 @@
 import { makeAutoObservable, observableShallow } from 'mobx';
-import * as THREE from 'three';
-import { makeId } from '../utils/ids';
-import { TO_METERS, distance, toUnit, format } from '../utils/units';
-import type { Measurement, Vec3, Unit, InteractionMode, MeasurementKind, LengthUnit } from '../types/measurement';
+import type { PointEnd, Vec3 } from '@/types/geometry';
+import type { MeasureMode, Measurement } from '@/types/measurement';
+import type { SavedMeasurement } from '@/types/projectFile';
+import { buildMeasurementsCsv } from '@/utils/csv';
+import { segmentLength } from '@/utils/geometry';
+import { makeId } from '@/utils/ids';
+import { MEASURE_COLORS } from '@/utils/measureColors';
+import { formatLength, sceneToUnit } from '@/utils/units';
+import type { RootStore } from './RootStore';
 
-type HistoryAction = 
-  | { type: 'placePoint'; measurement: Measurement }
-  | { type: 'placeCalPoint'; prevDraft: { a: Vec3 | null; b: Vec3 | null } }
-  | { type: 'remove'; measurement: Measurement; index: number }
-  | { type: 'movePoint'; id: string | 'cal'; end: 'a' | 'b'; prevPos: Vec3 }
-  | { type: 'clearAll'; measurements: Measurement[] };
+/** Default reported length for new measurements: the vertical component. */
+const DEFAULT_MODE: MeasureMode = 'y';
 
+/**
+ * The measurement list. Items are replaced (never mutated) on change, so the shallow
+ * observable array is enough to re-render rows and scene objects.
+ */
 export class MeasurementStore {
-  // --- New Calibration Fields ---
-  calA: Vec3 | null = null;
-  calB: Vec3 | null = null;
-  calLength: number | null = null;
-  calUnit: Unit = 'in';
-  calDraft: { a: Vec3 | null; b: Vec3 | null } = { a: null, b: null };
-  isAddingCal: boolean = false;
-
-  // --- New Measurement Fields ---
-  measurements: Measurement[] = [];
-  activeMeasureId: string | null = null;
-  hoverPoint: Vec3 | null = null;
+  items: Measurement[] = [];
+  /** Measurement waiting for its points to be clicked on the model. */
+  placingId: string | null = null;
   selectedId: string | null = null;
-  nextColorIndex: number = 0;
-  draggingId: string | null = null;
+  /** Row whose name is being edited inline. */
+  renamingId: string | null = null;
+  private nextColorIndex = 0;
 
-  // History stack
-  history: HistoryAction[] = [];
+  private readonly root: RootStore;
 
-  // --- Old Fields (Compatibility) ---
-  mode: InteractionMode = 'idle';
-  pendingPoints: THREE.Vector3[] = [];
-  scaleFactor: number | null = null; 
-  unit: LengthUnit = 'in';
-  calibrationId: string | null = null;
-  pendingCalibrationRawDistance: number | null = null;
+  constructor(root: RootStore) {
+    this.root = root;
+    makeAutoObservable<this, 'root'>(this, { root: false, items: observableShallow }, { autoBind: true });
+  }
 
-  constructor() {
-    makeAutoObservable(this, {
-      measurements: observableShallow,
-      history: observableShallow,
-      pendingPoints: observableShallow,
+  get placing(): Measurement | null {
+    return this.items.find((m) => m.id === this.placingId) ?? null;
+  }
+
+  get isPlacing(): boolean {
+    return this.placingId !== null;
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedId === id;
+  }
+
+  /** Length of `m` in the display unit, for the given mode (defaults to the row's chosen mode). */
+  formatValue(m: Measurement, mode: MeasureMode = m.selectedAxis): string {
+    const scale = this.root.calibration.metersPerSceneUnit;
+    if (!m.a || !m.b || scale === null) return '—';
+    const unit = this.root.workspace.displayUnit;
+    return formatLength(sceneToUnit(segmentLength(m.a, m.b, mode), scale, unit), unit);
+  }
+
+  get csv(): string {
+    const { calibration, workspace } = this.root;
+    return buildMeasurementsCsv({
+      measurements: this.items,
+      metersPerSceneUnit: calibration.metersPerSceneUnit,
+      unit: workspace.displayUnit,
+      calibration: calibration.length === null ? null : { length: calibration.length, unit: calibration.unit },
     });
-    // Initialize with one default measurement
-    this.addEmptyMeasurement();
   }
 
-  // --- New Computed ---
-  get metersPerSceneUnit(): number | null {
-    if (!this.calA || !this.calB || !this.calLength) return null;
-    const distY = Math.abs(this.calA[1] - this.calB[1]);
-    if (distY === 0) return null;
-    return (this.calLength * TO_METERS[this.calUnit]) / distY;
-  }
-
-  get isCalibrated(): boolean {
-    return this.metersPerSceneUnit !== null;
-  }
-
-  get selected(): Measurement | null {
-    return this.measurements.find((m) => m.id === this.selectedId) || null;
-  }
-
-  // --- New Calibration Actions ---
-  startAddingCal() {
-    this.isAddingCal = true;
-    this.calDraft = { a: null, b: null };
-  }
-
-  placeCalPoint(p: Vec3) {
-    if (!this.isAddingCal) return;
-
-    this.history.push({ type: 'placeCalPoint', prevDraft: { ...this.calDraft } });
-    if (this.history.length > 20) this.history.shift();
-
-    if (!this.calDraft.a) {
-      this.calDraft.a = p;
-    } else if (!this.calDraft.b) {
-      this.calDraft.b = p;
-      this.isAddingCal = false;
-    } else {
-      this.calDraft.b = p;
-      this.isAddingCal = false;
-    }
-  }
-
-  repickCal(which: 'a' | 'b') {
-    this.history.push({ type: 'placeCalPoint', prevDraft: { ...this.calDraft } });
-    if (this.history.length > 20) this.history.shift();
-    if (which === 'a') this.calDraft.a = null;
-    if (which === 'b') this.calDraft.b = null;
-  }
-
-  applyCalibration(length: number, unit: Unit) {
-    if (!this.calDraft.a || !this.calDraft.b) return;
-    this.calA = this.calDraft.a;
-    this.calB = this.calDraft.b;
-    this.calLength = length;
-    this.calUnit = unit;
-  }
-
-  startRecalibration() {
-    this.calDraft = { a: this.calA, b: this.calB };
-  }
-
-  cancelCalibration() {
-    this.calDraft = { a: null, b: null };
-  }
-
-  resetCalibration() {
-    this.calA = null;
-    this.calB = null;
-    this.calLength = null;
-    this.calUnit = 'in';
-    this.calDraft = { a: null, b: null };
-  }
-
-  // --- New Measurement Actions ---
-  addEmptyMeasurement() {
+  /** Adds a measurement and waits for its two points to be clicked. */
+  startNew() {
+    this.cancelPlacing();
     const measurement: Measurement = {
       id: makeId(),
-      name: `Measurement ${this.measurements.length + 1}`,
+      name: `Measurement ${this.items.length + 1}`,
       a: null,
       b: null,
       colorIndex: this.nextColorIndex,
       visible: true,
-      selectedAxis: 'y',
-      rawDistance: 0,
+      selectedAxis: DEFAULT_MODE,
+      createdAt: Date.now(),
     };
-    this.measurements.push(measurement);
-    this.nextColorIndex = (this.nextColorIndex + 1) % 6;
+    this.nextColorIndex = (this.nextColorIndex + 1) % MEASURE_COLORS.length;
+    this.items.push(measurement);
+    this.placingId = measurement.id;
+    this.selectedId = null;
   }
 
-  startMeasuringRow(id: string) {
-    const mIndex = this.measurements.findIndex(x => x.id === id);
-    if (mIndex >= 0) {
-      this.measurements[mIndex] = { ...this.measurements[mIndex], a: null, b: null, rawDistance: 0 };
-      this.activeMeasureId = id;
+  /** Stops placing; a measurement that never got both points is discarded. */
+  cancelPlacing() {
+    const placing = this.placing;
+    this.placingId = null;
+    if (placing && !placing.b) this.items = this.items.filter((m) => m.id !== placing.id);
+  }
+
+  placePoint(point: Vec3) {
+    const placing = this.placing;
+    if (!placing) return;
+    if (!placing.a) {
+      this.update(placing.id, { a: point });
+      return;
     }
+    this.update(placing.id, { b: point });
+    this.placingId = null;
+    this.selectedId = placing.id;
+    this.root.history.push(() => this.removeWithoutHistory(placing.id));
   }
 
-  cancelMeasuring() {
-    this.activeMeasureId = null;
-    // Old compat
-    this.mode = 'idle';
-    this.pendingPoints = [];
-    this.pendingCalibrationRawDistance = null;
-  }
-
-  placePoint(p: Vec3) {
-    if (!this.activeMeasureId) return;
-
-    const mIndex = this.measurements.findIndex(x => x.id === this.activeMeasureId);
-    if (mIndex < 0) return;
-
-    const m = { ...this.measurements[mIndex] };
-
-    if (!m.a) {
-      m.a = p;
-      this.measurements[mIndex] = m;
-    } else if (!m.b) {
-      m.b = p;
-      m.rawDistance = distance(m.a, m.b);
-      this.measurements[mIndex] = m;
-      this.activeMeasureId = null;
-      this.selectedId = m.id;
-
-      this.history.push({ type: 'placePoint', measurement: m });
-      if (this.history.length > 20) this.history.shift();
-    }
-  }
-
-  setHoverPoint(p: Vec3 | null) {
-    this.hoverPoint = p;
+  movePoint(id: string, end: PointEnd, point: Vec3) {
+    this.update(id, { [end]: point });
   }
 
   select(id: string | null) {
     this.selectedId = id;
   }
 
-  rename(id: string, name: string) {
-    const m = this.measurements.find(x => x.id === id);
-    if (m) m.name = name;
+  toggleSelected(id: string) {
+    this.selectedId = this.selectedId === id ? null : id;
   }
 
-  setMeasurementAxis(id: string, axis: 'euclidean' | 'x' | 'y' | 'z') {
-    const mIndex = this.measurements.findIndex(x => x.id === id);
-    if (mIndex >= 0) {
-      this.measurements[mIndex] = { ...this.measurements[mIndex], selectedAxis: axis };
-    }
+  get hasCompleted(): boolean {
+    return this.items.some((m) => m.a && m.b);
+  }
+
+  startRename(id: string) {
+    this.renamingId = id;
+  }
+
+  /** Saves the inline edit; an empty name keeps the old one. */
+  finishRename(name: string) {
+    const id = this.renamingId;
+    this.renamingId = null;
+    const trimmed = name.trim();
+    if (id && trimmed) this.update(id, { name: trimmed });
+  }
+
+  cancelRename() {
+    this.renamingId = null;
+  }
+
+  setMode(id: string, mode: MeasureMode) {
+    this.update(id, { selectedAxis: mode });
   }
 
   toggleVisible(id: string) {
-    const m = this.measurements.find(x => x.id === id);
-    if (m) m.visible = !m.visible;
+    const m = this.items.find((item) => item.id === id);
+    if (m) this.update(id, { visible: !m.visible });
   }
 
   remove(id: string) {
-    const index = this.measurements.findIndex((m) => m.id === id);
-    if (index >= 0) {
-      const measurement = this.measurements[index];
-      this.history.push({ type: 'remove', measurement, index });
-      if (this.history.length > 20) this.history.shift();
-      this.measurements.splice(index, 1);
-      if (this.selectedId === id) this.selectedId = null;
-      if (this.measurements.length === 0) {
-        this.addEmptyMeasurement();
-      }
+    const index = this.items.findIndex((m) => m.id === id);
+    if (index < 0) return;
+    const removed = this.items[index];
+    this.removeWithoutHistory(id);
+    if (removed.b) {
+      this.root.history.push(() => {
+        this.items.splice(index, 0, removed);
+      });
     }
   }
 
   clearAll() {
-    if (this.measurements.length > 0) {
-      this.history.push({ type: 'clearAll', measurements: [...this.measurements] });
-      if (this.history.length > 20) this.history.shift();
-      this.measurements = [];
-      this.selectedId = null;
-      this.addEmptyMeasurement();
-    }
+    const previous = this.items;
+    this.reset();
+    this.root.history.push(() => {
+      this.items = previous;
+    });
   }
 
-  movePoint(id: string | 'cal', end: 'a' | 'b' | 'A' | 'B', p: Vec3 | THREE.Vector3) {
-    const vec: Vec3 = Array.isArray(p) ? p : [p.x, p.y, p.z];
-    const endLower = end.toLowerCase() as 'a' | 'b';
-    if (id === 'cal') {
-      if (endLower === 'a' && this.calDraft.a) {
-        this.calDraft.a = vec;
-      } else if (endLower === 'b' && this.calDraft.b) {
-        this.calDraft.b = vec;
-      }
-    } else {
-      const mIndex = this.measurements.findIndex(x => x.id === id);
-      if (mIndex >= 0) {
-        const m = { ...this.measurements[mIndex] };
-        if (endLower === 'a') m.a = vec;
-        if (endLower === 'b') m.b = vec;
-        if (m.a && m.b) {
-          m.rawDistance = distance(m.a, m.b);
-        }
-        this.measurements[mIndex] = m;
-      }
-    }
+  reset() {
+    this.items = [];
+    this.placingId = null;
+    this.selectedId = null;
+    this.renamingId = null;
   }
 
-  setDragging(id: string | null) {
-    this.draggingId = id;
-  }
-
-  undo() {
-    const action = this.history.pop();
-    if (!action) return;
-
-    if (action.type === 'placePoint') {
-      this.measurements = this.measurements.filter(m => m.id !== action.measurement.id);
-      if (this.selectedId === action.measurement.id) this.selectedId = null;
-    } else if (action.type === 'placeCalPoint') {
-      this.calDraft = { ...action.prevDraft };
-    } else if (action.type === 'remove') {
-      this.measurements.splice(action.index, 0, action.measurement);
-    } else if (action.type === 'movePoint') {
-      this.movePoint(action.id, action.end, action.prevPos);
-    } else if (action.type === 'clearAll') {
-      this.measurements = action.measurements;
-    }
-  }
-
-  displayValue(m: Measurement, unit: Unit): string {
-    if (!m.a || !m.b) return '—';
-    const mps = this.metersPerSceneUnit;
-    if (mps === null) return '—';
-    let sceneDist = 0;
-    if (m.selectedAxis === 'x') {
-      sceneDist = Math.abs(m.a[0] - m.b[0]);
-    } else if (m.selectedAxis === 'y') {
-      sceneDist = Math.abs(m.a[1] - m.b[1]);
-    } else if (m.selectedAxis === 'z') {
-      sceneDist = Math.abs(m.a[2] - m.b[2]);
-    } else {
-      sceneDist = distance(m.a, m.b);
-    }
-    return format(toUnit(sceneDist, mps, unit), unit);
-  }
-
-  displayEuclideanValue(m: Measurement, unit: Unit): string {
-    if (!m.a || !m.b) return '—';
-    const mps = this.metersPerSceneUnit;
-    if (mps === null) return '—';
-    const sceneDist = distance(m.a, m.b);
-    return format(toUnit(sceneDist, mps, unit), unit);
-  }
-
-  displayDeltaValue(m: Measurement, axis: 'x'|'y'|'z', unit: Unit): string {
-    if (!m.a || !m.b) return '—';
-    const mps = this.metersPerSceneUnit;
-    if (mps === null) return '—';
-    const idx = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
-    const sceneDist = Math.abs(m.a[idx] - m.b[idx]);
-    return format(toUnit(sceneDist, mps, unit), unit);
-  }
-
-  exportCsv(unit: Unit): string {
-    const mps = this.metersPerSceneUnit;
-    let csv = '';
-    
-    if (this.calLength !== null) {
-      csv += `"Scaling Ratio:",${this.calLength},"${this.calUnit}"\n\n`;
-    }
-
-    csv += 'name,value,unit,dx,dy,dz,ax,ay,az,bx,by,bz\n';
-    
-    for (const m of this.measurements) {
-      if (!m.visible || !m.a || !m.b) continue;
-      const sceneDist = distance(m.a, m.b);
-      const val = mps !== null ? toUnit(sceneDist, mps, unit).toFixed(2) : '';
-      
-      const dx = Math.abs(m.a[0] - m.b[0]);
-      const dy = Math.abs(m.a[1] - m.b[1]);
-      const dz = Math.abs(m.a[2] - m.b[2]);
-      
-      const dxVal = mps !== null ? toUnit(dx, mps, unit).toFixed(2) : dx.toFixed(2);
-      const dyVal = mps !== null ? toUnit(dy, mps, unit).toFixed(2) : dy.toFixed(2);
-      const dzVal = mps !== null ? toUnit(dz, mps, unit).toFixed(2) : dz.toFixed(2);
-
-      csv += `"${m.name}",${val},${unit},${dxVal},${dyVal},${dzVal},${m.a[0]},${m.a[1]},${m.a[2]},${m.b[0]},${m.b[1]},${m.b[2]}\n`;
-    }
-    return csv;
-  }
-
-  // --- Old Methods (Compatibility until Layer 5) ---
-  startCalibration() {
-    this.mode = 'placing-calibration';
-    this.pendingPoints = [];
-    this.pendingCalibrationRawDistance = null;
-  }
-
-  startMeasurement() {
-    this.mode = 'placing-measurement';
-    this.pendingPoints = [];
-  }
-
-  cancelPending() {
-    this.mode = 'idle';
-    this.pendingPoints = [];
-    this.pendingCalibrationRawDistance = null;
-  }
-
-  addPoint(point: THREE.Vector3) {
-    if (this.mode === 'idle') return;
-    this.pendingPoints.push(point.clone());
-    if (this.pendingPoints.length < 2) return;
-
-    const [a, b] = this.pendingPoints;
-    const rawDistance = a.distanceTo(b);
-
-    if (this.mode === 'placing-calibration') {
-      this.pendingCalibrationRawDistance = rawDistance;
-    } else {
-      this._commit('measurement', a, b, rawDistance);
-      this.cancelPending();
-    }
-  }
-
-  completeCalibration(knownDistance: number) {
-    if (this.pendingCalibrationRawDistance == null || knownDistance <= 0) return;
-    const [a, b] = this.pendingPoints;
-
-    if (this.calibrationId) {
-      this.measurements = this.measurements.filter((m) => m.id !== this.calibrationId);
-    }
-
-    const knownDistanceInMm = (knownDistance * TO_METERS[this.unit]) / 0.001;
-    this.scaleFactor = knownDistanceInMm / this.pendingCalibrationRawDistance;
-    const measurement = this._commit('calibration', a, b, this.pendingCalibrationRawDistance);
-    this.calibrationId = measurement.id;
-    this.cancelPending();
-  }
-
-  removeMeasurement(id: string) {
-    this.remove(id);
-    // Old compat
-    if (id === this.calibrationId) {
-      this.calibrationId = null;
-      this.scaleFactor = null;
-    }
-  }
-
-  resetAll() {
-    this.clearAll();
-    // Old compat
-    this.pendingPoints = [];
-    this.scaleFactor = null;
-    this.calibrationId = null;
-    this.mode = 'idle';
-    this.pendingCalibrationRawDistance = null;
-  }
-
-  setUnit(unit: LengthUnit) {
-    this.unit = unit;
-  }
-
-  realDistanceOf(measurement: any): number | null {
-    return this.scaleFactor != null ? measurement.rawDistance * this.scaleFactor : null;
-  }
-
-  private _commit(
-    kind: MeasurementKind,
-    a: THREE.Vector3,
-    b: THREE.Vector3,
-    rawDistance: number,
-  ): any {
-    const measurement: any = {
-      id: makeId(),
-      kind,
-      pointA: a,
-      pointB: b,
-      rawDistance,
-      createdAt: Date.now(),
-      a: [a.x, a.y, a.z],
-      b: [b.x, b.y, b.z],
-      name: `Measurement ${this.measurements.length + 1}`,
-      colorIndex: this.nextColorIndex,
-      visible: true
-    };
-    this.measurements.push(measurement);
-    this.nextColorIndex = (this.nextColorIndex + 1) % 6;
-    return measurement;
-  }
-
-  // --- Serialization & Hydration for Run History ---
-  exportData() {
+  toJSON(): { measurements: SavedMeasurement[]; nextColorIndex: number } {
     return {
-      version: 1,
-      calibration: {
-        calA: this.calA,
-        calB: this.calB,
-        calLength: this.calLength,
-        calUnit: this.calUnit,
-      },
-      measurements: this.measurements.map((m) => ({
-        id: m.id,
-        name: m.name,
-        colorIndex: m.colorIndex,
-        visible: m.visible,
-        a: m.a,
-        b: m.b,
-        rawDistance: m.rawDistance,
-        createdAt: m.createdAt,
-      })),
+      measurements: this.items
+        .filter((m) => m.a && m.b)
+        .map(({ id, name, colorIndex, visible, a, b, selectedAxis, createdAt }) => ({
+          id,
+          name,
+          colorIndex,
+          visible,
+          a,
+          b,
+          selectedAxis,
+          createdAt,
+        })),
       nextColorIndex: this.nextColorIndex,
     };
   }
 
-  importData(data: any) {
-    if (!data) return;
-    this.clearAll();
-    this.resetCalibration();
+  load(saved: SavedMeasurement[], nextColorIndex: number) {
+    this.reset();
+    this.items = saved.map((m) => ({
+      ...m,
+      // Saves made before the mode was stored reported the straight-line length.
+      selectedAxis: m.selectedAxis ?? 'euclidean',
+      createdAt: m.createdAt ?? Date.now(),
+    }));
+    this.nextColorIndex = nextColorIndex;
+  }
 
-    if (data.calibration) {
-      this.calA = data.calibration.calA || null;
-      this.calB = data.calibration.calB || null;
-      this.calLength = typeof data.calibration.calLength === 'number' ? data.calibration.calLength : null;
-      this.calUnit = data.calibration.calUnit || 'in';
-    }
+  private update(id: string, patch: Partial<Measurement>) {
+    const index = this.items.findIndex((m) => m.id === id);
+    if (index >= 0) this.items[index] = { ...this.items[index], ...patch };
+  }
 
-    if (Array.isArray(data.measurements)) {
-      this.measurements = data.measurements.map((m: any) => ({
-        id: m.id || makeId(),
-        name: m.name || 'Measurement',
-        colorIndex: typeof m.colorIndex === 'number' ? m.colorIndex : 0,
-        visible: m.visible !== false,
-        a: m.a || null,
-        b: m.b || null,
-        rawDistance: m.rawDistance,
-        createdAt: m.createdAt || Date.now(),
-      }));
-    }
-
-    if (typeof data.nextColorIndex === 'number') {
-      this.nextColorIndex = data.nextColorIndex;
-    }
-    this.history = [];
-    this.activeMeasureId = null;
-    this.selectedId = null;
+  private removeWithoutHistory(id: string) {
+    this.items = this.items.filter((m) => m.id !== id);
+    if (this.selectedId === id) this.selectedId = null;
+    if (this.placingId === id) this.placingId = null;
   }
 }
-

@@ -1,101 +1,35 @@
-import { makeAutoObservable } from 'mobx';
-import type { RootStore } from './RootStore';
-import type { Step, Unit } from '../types/measurement';
+import { makeAutoObservable, observableRef } from 'mobx';
 
+export interface ConfirmRequest {
+  title: string;
+  description?: string;
+  confirmLabel: string;
+  tone?: 'danger' | 'default';
+  onConfirm: () => void;
+  onCancel?: () => void;
+}
+
+/** App-wide UI state that isn't tied to one feature: the confirmation dialog. */
 export class UIStore {
-  activeView: 'start' | 'history' | 'viewer' = 'start';
-  mode: 'calibrate' | 'measure' = 'calibrate';
-  displayUnit: Unit = 'in';
-  viewTool: 'rotate' | 'pan' = 'rotate';
-  snapToEdges = true;
-  showAxisLines = true;
-  fitRequest = 0;
-  isDraggingFile = false;
-  confirm: null | { title: string; confirmLabel: string; onConfirm: () => void } = null;
-  private root: RootStore;
+  confirmRequest: ConfirmRequest | null = null;
 
-  constructor(root: RootStore) {
-    this.root = root;
-    makeAutoObservable(this, { root: false } as any);
+  constructor() {
+    makeAutoObservable(this, { confirmRequest: observableRef }, { autoBind: true });
   }
 
-  goToStart() {
-    this.activeView = 'start';
+  askConfirm(request: ConfirmRequest) {
+    this.confirmRequest = request;
   }
 
-  goToHistory() {
-    this.activeView = 'history';
+  confirm() {
+    const request = this.confirmRequest;
+    this.confirmRequest = null;
+    request?.onConfirm();
   }
 
-  goToViewer() {
-    this.activeView = 'viewer';
-  }
-
-  get step(): Step {
-    if (!this.root.model.isLoaded) return 'load';
-    if (!this.root.measurement.isCalibrated) return 'calibrate';
-    return this.mode;
-  }
-
-  goToCalibrate() {
-    this.root.measurement.startRecalibration();
-    this.mode = 'calibrate';
-  }
-
-  goToMeasure() {
-    this.mode = 'measure';
-  }
-
-
-  requestFit() {
-    this.fitRequest++;
-  }
-
-  askConfirm(cfg: { title: string; confirmLabel: string; onConfirm: () => void }) {
-    this.confirm = cfg;
-  }
-
-  closeConfirm() {
-    this.confirm = null;
-  }
-
-  setUnit(u: Unit) {
-    this.displayUnit = u;
-  }
-
-  setViewTool(t: 'rotate' | 'pan') {
-    this.viewTool = t;
-  }
-
-  setSnap(b: boolean) {
-    this.snapToEdges = b;
-  }
-
-  setShowAxisLines(b: boolean) {
-    this.showAxisLines = b;
-  }
-
-  setDraggingFile(b: boolean) {
-    this.isDraggingFile = b;
-  }
-
-  requestReplace(file: File) {
-    if (this.root.measurement.measurements.length > 0 || this.root.measurement.isCalibrated) {
-      this.askConfirm({
-        title: `Replace ${file.name}? Your scale and measurements will be cleared.`,
-        confirmLabel: 'Replace',
-        onConfirm: () => {
-          this.root.measurement.clearAll();
-          this.root.measurement.resetCalibration();
-          this.root.model.setFile(file);
-          this.mode = 'calibrate';
-        },
-      });
-    } else {
-      this.root.measurement.clearAll();
-      this.root.measurement.resetCalibration();
-      this.root.model.setFile(file);
-      this.mode = 'calibrate';
-    }
+  cancelConfirm() {
+    const request = this.confirmRequest;
+    this.confirmRequest = null;
+    request?.onCancel?.();
   }
 }
