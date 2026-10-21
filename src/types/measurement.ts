@@ -1,26 +1,24 @@
-export type Step = 'load' | 'calibrate' | 'measure';
+import type { Axis, Vec3 } from './geometry';
+
 export type Unit = 'mm' | 'cm' | 'm' | 'in' | 'ft';
-export type Vec3 = [number, number, number];
+
+/** Which length of a measurement is reported: the straight line, or one axis component. */
+export type MeasureMode = 'euclidean' | Axis;
 
 export interface Measurement {
   id: string;
-  name: string;        // default "Measurement N"
-  a: Vec3 | null;      // scene units
-  b: Vec3 | null;      // scene units
-  colorIndex: number;  // index into MEASURE_COLORS
-  visible: boolean;    // default true
-  selectedAxis?: 'euclidean' | 'x' | 'y' | 'z';
-  
-  // Keep old fields optionally for Layer 1-4 compatibility
-  kind?: MeasurementKind;
-  pointA?: any;
-  pointB?: any;
-  rawDistance: number;
-  createdAt?: number;
+  name: string;
+  /** Start point in scene units; null until placed. */
+  a: Vec3 | null;
+  /** End point in scene units; null until placed. */
+  b: Vec3 | null;
+  colorIndex: number;
+  visible: boolean;
+  selectedAxis: MeasureMode;
+  createdAt: number;
 }
 
-
-// Keeping old types temporarily for old UI to compile until Layer 5
-export type MeasurementKind = 'calibration' | 'measurement';
-export type InteractionMode = 'idle' | 'placing-calibration' | 'placing-measurement';
-export type LengthUnit = Unit;
+export interface CalibrationPoints {
+  a: Vec3 | null;
+  b: Vec3 | null;
+}
