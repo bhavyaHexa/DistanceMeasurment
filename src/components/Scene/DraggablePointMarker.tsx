@@ -84,10 +84,14 @@ export const DraggablePointMarker = observer(function DraggablePointMarker({
         measurement.setDragging(null);
         gl.domElement.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
       };
 
       gl.domElement.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
+      // A cancelled pointer (touch interrupted, browser gesture) never fires pointerup —
+      // without this the drag stays active and OrbitControls stay disabled.
+      window.addEventListener('pointercancel', onUp);
     },
     [camera, gl, measurement, id, model, toNDC, end, ui.snapToEdges]
   );
