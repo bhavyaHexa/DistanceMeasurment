@@ -3,6 +3,7 @@ import type { RootStore } from './RootStore';
 import type { Step, Unit } from '../types/measurement';
 
 export class UIStore {
+  activeView: 'start' | 'history' | 'viewer' = 'start';
   mode: 'calibrate' | 'measure' = 'calibrate';
   displayUnit: Unit = 'in';
   viewTool: 'rotate' | 'pan' = 'rotate';
@@ -18,10 +19,20 @@ export class UIStore {
     makeAutoObservable(this, { root: false } as any);
   }
 
+  goToStart() {
+    this.activeView = 'start';
+  }
+
+  goToHistory() {
+    this.activeView = 'history';
+  }
+
+  goToViewer() {
+    this.activeView = 'viewer';
+  }
+
   get step(): Step {
     if (!this.root.model.isLoaded) return 'load';
-    // Use the old method to check calibration state until layer 5 removes it, 
-    // or use the new one. The new one is isCalibrated.
     if (!this.root.measurement.isCalibrated) return 'calibrate';
     return this.mode;
   }
@@ -34,6 +45,7 @@ export class UIStore {
   goToMeasure() {
     this.mode = 'measure';
   }
+
 
   requestFit() {
     this.fitRequest++;

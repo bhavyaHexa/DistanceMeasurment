@@ -16,7 +16,9 @@ export interface Measurement {
   pointA?: any;
   pointB?: any;
   rawDistance: number;
+  createdAt?: number;
 }
+
 
 // Keeping old types temporarily for old UI to compile until Layer 5
 export type MeasurementKind = 'calibration' | 'measurement';

@@ -40,6 +40,17 @@ export class ModelStore {
     this.objectUrl = url;
   }
 
+  setRemoteModel(name: string, glbUrl: string) {
+    this.reset();
+    this.file = { name, sizeBytes: 0, url: glbUrl };
+    this.error = null;
+    this.loadProgress = 0;
+
+    // Compatibility updates
+    this.fileName = name;
+    this.objectUrl = glbUrl;
+  }
+
   setLoaded(box?: THREE.Box3) {
     this._isLoaded = true;
     this.loadProgress = null;

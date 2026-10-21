@@ -7,6 +7,8 @@ import { MeasurementList } from './components/UI/MeasurementList';
 import { SceneCanvas } from './components/Scene/SceneCanvas';
 import { ConfirmDialog } from './components/UI/ConfirmDialog';
 import { StatusBar } from './components/UI/StatusBar';
+import { StartScreen } from './components/UI/StartScreen';
+import { HistoryView } from './components/History/HistoryView';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import './App.css';
 
@@ -16,6 +18,17 @@ const App = observer(function App() {
 
   useKeyboardShortcuts();
 
+  // 1. Initial Hub Screen (New Project vs Existing Projects)
+  if (ui.activeView === 'start') {
+    return <StartScreen />;
+  }
+
+  // 2. History Page
+  if (ui.activeView === 'history') {
+    return <HistoryView />;
+  }
+
+  // 3. 3D Viewer Workspace
   return (
     <div className="app">
       <Toolbar />

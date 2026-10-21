@@ -429,4 +429,62 @@ export class MeasurementStore {
     this.nextColorIndex = (this.nextColorIndex + 1) % 6;
     return measurement;
   }
+
+  // --- Serialization & Hydration for Run History ---
+  exportData() {
+    return {
+      version: 1,
+      calibration: {
+        calA: this.calA,
+        calB: this.calB,
+        calLength: this.calLength,
+        calUnit: this.calUnit,
+      },
+      measurements: this.measurements.map((m) => ({
+        id: m.id,
+        name: m.name,
+        colorIndex: m.colorIndex,
+        visible: m.visible,
+        a: m.a,
+        b: m.b,
+        rawDistance: m.rawDistance,
+        createdAt: m.createdAt,
+      })),
+      nextColorIndex: this.nextColorIndex,
+    };
+  }
+
+  importData(data: any) {
+    if (!data) return;
+    this.clearAll();
+    this.resetCalibration();
+
+    if (data.calibration) {
+      this.calA = data.calibration.calA || null;
+      this.calB = data.calibration.calB || null;
+      this.calLength = typeof data.calibration.calLength === 'number' ? data.calibration.calLength : null;
+      this.calUnit = data.calibration.calUnit || 'in';
+    }
+
+    if (Array.isArray(data.measurements)) {
+      this.measurements = data.measurements.map((m: any) => ({
+        id: m.id || makeId(),
+        name: m.name || 'Measurement',
+        colorIndex: typeof m.colorIndex === 'number' ? m.colorIndex : 0,
+        visible: m.visible !== false,
+        a: m.a || null,
+        b: m.b || null,
+        rawDistance: m.rawDistance,
+        createdAt: m.createdAt || Date.now(),
+      }));
+    }
+
+    if (typeof data.nextColorIndex === 'number') {
+      this.nextColorIndex = data.nextColorIndex;
+    }
+    this.history = [];
+    this.activeMeasureId = null;
+    this.selectedId = null;
+  }
 }
+
