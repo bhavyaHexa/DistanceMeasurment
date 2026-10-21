@@ -20,13 +20,16 @@ export const SceneCanvas = observer(function SceneCanvas() {
     <Canvas
       camera={CAMERA}
       dpr={[1, 2]}
+      // Scan textures already have their lighting baked in: show their true colours (no tone mapping).
+      flat
       gl={{ antialias: true, logarithmicDepthBuffer: true }}
       style={{ position: 'absolute', inset: 0, cursor: viewer.cursor }}
     >
       <color attach="background" args={[BACKGROUND]} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[5, 10, 5]} intensity={1.2} />
-      <directionalLight position={[-5, -5, -5]} intensity={0.3} />
+      {/* Ambient is high because three.js scales it by 1/π; the directional lights only add gentle shape. */}
+      <ambientLight intensity={2.4} />
+      <directionalLight position={[5, 10, 5]} intensity={1} />
+      <directionalLight position={[-5, 4, -5]} intensity={0.5} />
 
       <Suspense fallback={null}>
         <Bounds margin={1.2}>
