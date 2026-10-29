@@ -31,7 +31,7 @@ export const ProjectsTable = observer(function ProjectsTable() {
     return projects.search.trim() ? (
       <StateCard title="No matching projects" text={`Nothing matches “${projects.search.trim()}”.`} />
     ) : (
-      <StateCard title="No projects yet" text="Create a project and upload a scan ZIP to start measuring.">
+      <StateCard title="No projects yet" text="Create a project and upload a video to start measuring.">
         <Button variant="primary" icon={Plus} onClick={newProject.open}>
           New project
         </Button>

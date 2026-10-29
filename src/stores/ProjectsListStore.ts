@@ -1,12 +1,14 @@
 import { makeAutoObservable, observableShallow, runInAction } from 'mobx';
 import { errorMessage } from '@/services/http';
 import { runsApi } from '@/services/runsApi';
-import type { RunSummary } from '@/types/api';
+import type { RunStatus, RunSummary } from '@/types/api';
 
 const PAGE_SIZE = 20;
+const API_PAGE_SIZE = 100;
 const SEARCH_DEBOUNCE_MS = 300;
+const LISTED_STATUSES: readonly RunStatus[] = ['saved', 'queued', 'processing'];
 
-/** The Projects page: a searchable, paged list of every run. */
+/** The Projects page: a searchable, globally sorted list of saved and active runs. */
 export class ProjectsListStore {
   items: RunSummary[] = [];
   total = 0;
@@ -64,15 +66,38 @@ export class ProjectsListStore {
     this.error = null;
 
     try {
-      const result = await runsApi.list({
-        project_name: this.search.trim() || undefined,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      });
+      const requiredCount = (page + 1) * PAGE_SIZE;
+      const offsets = Array.from(
+        { length: Math.ceil(requiredCount / API_PAGE_SIZE) },
+        (_, index) => index * API_PAGE_SIZE,
+      );
+      const results = await Promise.all(
+        LISTED_STATUSES.map(async (status) => {
+          const pages = await Promise.all(
+            offsets.map((offset) =>
+              runsApi.list({
+                status,
+                project_name: this.search.trim() || undefined,
+                limit: Math.min(API_PAGE_SIZE, requiredCount - offset),
+                offset,
+              }),
+            ),
+          );
+          return {
+            total: pages[0]?.total ?? 0,
+            items: pages.flatMap((result) => result.items),
+          };
+        }),
+      );
       if (requestId !== this.requestId) return;
       runInAction(() => {
-        this.items = result.items;
-        this.total = result.total;
+        const allItems = results.flatMap((result) => result.items);
+        allItems.sort((a, b) => {
+          const timeDifference = Date.parse(b.created_at) - Date.parse(a.created_at);
+          return timeDifference || a.run_id.localeCompare(b.run_id);
+        });
+        this.items = allItems.slice(page * PAGE_SIZE, requiredCount);
+        this.total = results.reduce((sum, result) => sum + result.total, 0);
       });
     } catch (error) {
       if (requestId !== this.requestId) return;

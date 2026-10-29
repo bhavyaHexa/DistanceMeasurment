@@ -21,7 +21,7 @@ export const ProjectsPage = observer(function ProjectsPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
-            <p className="text-sm text-gray-600">Open a saved project or start a new one from a scan ZIP.</p>
+            <p className="text-sm text-gray-600">Open a saved project or check on a video that is still processing.</p>
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
