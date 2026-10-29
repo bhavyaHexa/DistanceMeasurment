@@ -1,30 +1,21 @@
-import { makeAutoObservable, observableRef, runInAction } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { errorMessage } from '@/services/http';
-import { prepareScanZip, type PreparedScan } from '@/utils/zip';
 import type { RootStore } from './RootStore';
 
-const MAX_NAME_LENGTH = 100;
+const MAX_NAME_LENGTH = 255;
 
-/** State of the "New project" dialog: project name plus the scan ZIP, validated before submit. */
+/** State of the "New project" dialog: project name and project creation. */
 export class NewProjectFormStore {
   isOpen = false;
   name = '';
-  scan: PreparedScan | null = null;
-  fileError: string | null = null;
-  isPreparing = false;
   isSubmitting = false;
   submitError: string | null = null;
 
-  private prepareId = 0;
   private readonly root: RootStore;
 
   constructor(root: RootStore) {
     this.root = root;
-    makeAutoObservable<this, 'root' | 'prepareId'>(
-      this,
-      { root: false, prepareId: false, scan: observableRef },
-      { autoBind: true },
-    );
+    makeAutoObservable<this, 'root'>(this, { root: false }, { autoBind: true });
   }
 
   get trimmedName(): string {
@@ -36,9 +27,7 @@ export class NewProjectFormStore {
   }
 
   get canSubmit(): boolean {
-    return (
-      this.trimmedName.length > 0 && !this.nameError && this.scan !== null && !this.isPreparing && !this.isSubmitting
-    );
+    return this.trimmedName.length > 0 && !this.nameError && !this.isSubmitting;
   }
 
   open() {
@@ -56,38 +45,13 @@ export class NewProjectFormStore {
     this.name = value;
   }
 
-  async selectFile(file: File) {
-    const id = ++this.prepareId;
-    this.scan = null;
-    this.fileError = null;
-    this.isPreparing = true;
-    if (!this.trimmedName) this.name = file.name.replace(/\.zip$/i, '');
-
-    try {
-      const scan = await prepareScanZip(file);
-      if (id === this.prepareId) runInAction(() => (this.scan = scan));
-    } catch (error) {
-      if (id === this.prepareId) runInAction(() => (this.fileError = errorMessage(error, 'Could not read this file.')));
-    } finally {
-      if (id === this.prepareId) runInAction(() => (this.isPreparing = false));
-    }
-  }
-
-  clearFile() {
-    this.prepareId++;
-    this.scan = null;
-    this.fileError = null;
-    this.isPreparing = false;
-  }
-
-  /** Creates the project and starts the upload. Resolves with the new run id, or null on failure. */
   async submit(): Promise<string | null> {
-    if (!this.canSubmit || !this.scan) return null;
+    if (!this.canSubmit) return null;
     this.isSubmitting = true;
     this.submitError = null;
 
     try {
-      const runId = await this.root.project.create(this.trimmedName, this.scan);
+      const runId = await this.root.project.create(this.trimmedName);
       runInAction(() => {
         this.isSubmitting = false;
         this.close();
@@ -103,7 +67,6 @@ export class NewProjectFormStore {
   }
 
   private reset() {
-    this.clearFile();
     this.name = '';
     this.submitError = null;
   }

@@ -1,4 +1,4 @@
-export type RunStatus = 'created' | 'converted' | 'saved' | 'failed';
+export type RunStatus = 'created' | 'queued' | 'processing' | 'converted' | 'saved' | 'failed';
 
 export interface RunSummary {
   run_id: string;
@@ -11,16 +11,19 @@ export interface RunSummary {
 
 export interface RunDetail extends RunSummary {
   error: string | null;
+  error_code: string | null;
+  stage: string | null;
+  progress: number | null;
+  photo_count: number | null;
   glb_url: string | null;
   json_url: string | null;
   expires_in: number;
 }
 
-export interface ConvertResponse {
+export interface VideoResponse {
   run_id: string;
   status: RunStatus;
-  glb_url: string;
-  expires_in: number;
+  duration_seconds: number;
 }
 
 export interface SaveResponse {
@@ -39,4 +42,15 @@ export interface ListRunsParams {
   project_name?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface Health {
+  status: string;
+  capture: {
+    available: boolean;
+    code: string | null;
+    message: string | null;
+    engine_version: string | null;
+    state: string | null;
+  };
 }

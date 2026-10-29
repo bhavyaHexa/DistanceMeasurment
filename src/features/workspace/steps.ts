@@ -6,4 +6,4 @@ export const STEPS: readonly { id: Step; label: string }[] = [
   { id: 'measure', label: 'Measure' },
 ];
 
-export const UPLOAD_STAGES = ['Checking files', 'Uploading', 'Converting to 3D', 'Opening in viewer'] as const;
+export const UPLOAD_STAGES = ['Upload video', 'Create 3D model', 'Load model'] as const;

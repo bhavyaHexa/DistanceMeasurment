@@ -11,6 +11,8 @@ export function useWorkspacePage() {
 
   useEffect(() => {
     if (runId) void project.open(runId);
+    void project.checkHealth();
+    return () => project.stopPolling();
   }, [runId, project]);
 
   useKeyboardShortcuts();

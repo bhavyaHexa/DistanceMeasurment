@@ -1,6 +1,6 @@
 # Distance Measure
 
-Measure real-world distances on photogrammetry scans. Upload a scan ZIP, set the scale from two
+Measure real-world distances on photogrammetry models. Upload a video, set the scale from two
 points with a known vertical distance, then place measurements on the 3D model and save them.
 
 ## Getting started
@@ -19,11 +19,12 @@ npm run dev
 
 ## How it works
 
-1. **Projects** (`/projects`) lists every run from the backend. **New project** asks for a name and
-   the scan ZIP; the ZIP is checked in the browser (one `.obj`, `.mtl` and `.jpg`; videos are dropped)
-   before anything is uploaded.
+1. **Projects** (`/projects`) lists saved projects and active video processing runs. **New project**
+   asks for a name; upload its video from the workspace.
 2. **Workspace** (`/projects/:runId`) walks through three steps:
-   - **Upload** — the ZIP is uploaded and converted to a GLB on the server, then loaded into the viewer.
+   - **Upload** — upload an MP4, MOV, AVI, WMV, MPG or MPEG video (up to 300 MB). The workspace shows
+     upload progress, then the backend's processing stage and percentage while it creates the 3D model.
+     Processing can take several minutes; progress resumes when the project is reopened.
    - **Set scale** — click points A and B and enter their real vertical distance.
    - **Measure** — add measurements, choose straight-line or ΔX/ΔY/ΔZ, export CSV, and save.
 

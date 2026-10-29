@@ -1,27 +1,32 @@
 import type {
-  ConvertResponse,
+  Health,
   ListRunsParams,
   RunDetail,
   RunList,
   RunSummary,
   SaveResponse,
+  VideoResponse,
 } from '@/types/api';
 import type { ProjectFile } from '@/types/projectFile';
-import { get, post } from './http';
+import { ApiError, get, post } from './http';
 
 export const runsApi = {
+  health(): Promise<Health> {
+    return get<Health>('/health');
+  },
+
   create(projectName: string): Promise<RunSummary> {
     return post<RunSummary>('/runs', { project_name: projectName });
   },
 
-  convert(
+  uploadVideo(
     runId: string,
-    zip: Blob,
+    video: File,
     options: { onUploadProgress: (percent: number) => void; signal?: AbortSignal },
-  ): Promise<ConvertResponse> {
+  ): Promise<VideoResponse> {
     const form = new FormData();
-    form.append('file', zip, 'model.zip');
-    return post<ConvertResponse>(`/runs/${runId}/convert`, form, { ...options, timeout: 0 });
+    form.append('file', video, video.name);
+    return post<VideoResponse>(`/runs/${runId}/video`, form, { ...options, timeout: 0 });
   },
 
   save(runId: string, projectFile: ProjectFile): Promise<SaveResponse> {
@@ -35,17 +40,14 @@ export const runsApi = {
     return get<RunList>('/runs', { params: { ...params }, signal });
   },
 
-  get(runId: string): Promise<RunDetail> {
-    return get<RunDetail>(`/runs/${runId}`);
+  get(runId: string, signal?: AbortSignal): Promise<RunDetail> {
+    return get<RunDetail>(`/runs/${runId}`, { signal });
   },
 
-  /** Downloads saved metadata from its presigned URL. Returns null when it can't be read. */
+  /** Downloads saved metadata from its presigned URL. */
   async fetchProjectFile(url: string): Promise<unknown> {
-    try {
-      const response = await fetch(url);
-      return response.ok ? await response.json() : null;
-    } catch {
-      return null;
-    }
+    const response = await fetch(url);
+    if (!response.ok) throw new ApiError(response.status, `Could not download saved metadata (${response.status}).`);
+    return response.json();
   },
 };

@@ -1,15 +1,17 @@
 import axios, { type AxiosProgressEvent } from 'axios';
 
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_BASE_URL || 'https://9r3vxkr8-8000.inc1.devtunnels.ms/api/v1';
+  import.meta.env.VITE_API_BASE_URL || 'http://15.252.59.156/api/v1';
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -18,9 +20,14 @@ interface ValidationIssue {
   msg?: string;
 }
 
+interface ApiErrorBody {
+  detail?: unknown;
+  code?: unknown;
+}
+
 /** The backend sends `detail` as a string for business errors, or a list for validation errors. */
 function errorMessageFrom(body: unknown, fallback: string): string {
-  const detail = (body as { detail?: unknown } | null)?.detail;
+  const detail = (body as ApiErrorBody | null)?.detail;
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) {
     return (detail as ValidationIssue[])
@@ -36,7 +43,14 @@ client.interceptors.response.use(undefined, (error: unknown) => {
   if (axios.isCancel(error)) return Promise.reject(error);
   if (axios.isAxiosError(error) && error.response) {
     const { status, statusText, data } = error.response;
-    return Promise.reject(new ApiError(status, errorMessageFrom(data, statusText || `Request failed (${status})`)));
+    const code = (data as ApiErrorBody | null)?.code;
+    return Promise.reject(
+      new ApiError(
+        status,
+        errorMessageFrom(data, statusText || `Request failed (${status})`),
+        typeof code === 'string' ? code : undefined,
+      ),
+    );
   }
   return Promise.reject(
     new ApiError(0, `Cannot reach the server at ${API_BASE_URL}. Check that the backend is running.`),

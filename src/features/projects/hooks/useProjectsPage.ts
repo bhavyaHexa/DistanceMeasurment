@@ -5,12 +5,13 @@ import { projectPath } from '@/app/routes';
 
 /** Loads the project list on mount and returns the action that creates a project and opens it. */
 export function useProjectsPage() {
-  const { projects, newProject } = useStores();
+  const { projects, newProject, project } = useStores();
   const navigate = useNavigate();
 
   useEffect(() => {
     void projects.load(0);
-  }, [projects]);
+    void project.checkHealth();
+  }, [projects, project]);
 
   const createProject = async () => {
     const runId = await newProject.submit();
