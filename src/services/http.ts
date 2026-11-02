@@ -1,7 +1,7 @@
 import axios, { type AxiosProgressEvent } from 'axios';
 
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_BASE_URL || 'https://cover-and-all-itwin.hexacoder.co/api/v1';
+  import.meta.env.VITE_API_BASE_URL || 'https://d1p4cerrn0hzd3.cloudfront.net/api/v1';
 
 export class ApiError extends Error {
   readonly status: number;

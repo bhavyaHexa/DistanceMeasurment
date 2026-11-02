@@ -83,6 +83,9 @@ export class ProjectsListStore {
               }),
             ),
           );
+          if (pages.some((result) => !Array.isArray(result?.items))) {
+            throw new Error('Unexpected response from the runs API.');
+          }
           return {
             total: pages[0]?.total ?? 0,
             items: pages.flatMap((result) => result.items),
