@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { ProjectsPage } from '@/features/projects/ProjectsPage';
 import { AppLayout } from './AppLayout';
-import { PROJECTS_PATH } from './routes';
+import { PROJECTS_PATH, TEST_UPLOAD_PATH } from './routes';
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +12,10 @@ export const router = createBrowserRouter([
         // The workspace pulls in three.js; load it only when a project is opened.
         path: `${PROJECTS_PATH}/:runId`,
         lazy: async () => ({ Component: (await import('@/features/workspace/WorkspacePage')).WorkspacePage }),
+      },
+      {
+        path: TEST_UPLOAD_PATH,
+        lazy: async () => ({ Component: (await import('@/features/testUpload/TestUploadPage')).TestUploadPage }),
       },
       { path: '*', element: <Navigate to={PROJECTS_PATH} replace /> },
     ],
