@@ -28,13 +28,6 @@ export const UploadPanel = observer(function UploadPanel() {
               <h2 className="text-base font-semibold">
                 {stage.index === 1 ? 'Creating your 3D model' : stage.index === 0 ? 'Uploading your video' : 'Loading your model'}
               </h2>
-              <p className="text-sm text-gray-600">
-                {stage.index === 1
-                  ? 'This can take up to 15 minutes. Progress may pause while the model is being built.'
-                  : stage.index === 0
-                    ? 'Upload progress is shown below.'
-                    : 'Preparing the model for the viewer…'}
-              </p>
             </div>
 
             <ProgressBar value={stage.percent} label={stage.label} />
