@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import type { PointEnd, Vec3 } from '@/types/geometry';
 import type { CalibrationPoints, Unit } from '@/types/measurement';
 import type { SavedCalibration } from '@/types/projectFile';
-import { axisDelta } from '@/utils/geometry';
+import { distance } from '@/utils/geometry';
 import { toMeters } from '@/utils/units';
 import type { RootStore } from './RootStore';
 
@@ -27,12 +27,12 @@ export class CalibrationStore {
     makeAutoObservable<this, 'root'>(this, { root: false }, { autoBind: true });
   }
 
-  /** Real-world metres per scene unit, from the vertical (Y) offset between A and B. */
+  /** Real-world metres per scene unit, from the straight-line distance between A and B. */
   get metersPerSceneUnit(): number | null {
     const { a, b } = this.applied;
     if (!a || !b || !this.length) return null;
-    const sceneHeight = axisDelta(a, b, 'y');
-    return sceneHeight === 0 ? null : toMeters(this.length, this.unit) / sceneHeight;
+    const sceneDistance = distance(a, b);
+    return sceneDistance === 0 ? null : toMeters(this.length, this.unit) / sceneDistance;
   }
 
   get isCalibrated(): boolean {
