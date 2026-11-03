@@ -1,11 +1,20 @@
 import { observer } from 'mobx-react-lite';
-import { Plus, Search } from 'lucide-react';
+import { ChevronDown, Plus, Search } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/Button';
 import { useStores } from '@/hooks/useStores';
+import { STATUS_FILTERS, type StatusFilter } from '@/stores/ProjectsListStore';
 import { useProjectsPage } from './hooks/useProjectsPage';
 import { NewProjectDialog } from './NewProjectDialog';
 import { ProjectsTable } from './ProjectsTable';
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  saved: 'Saved',
+  all: 'All statuses',
+  created: 'Created',
+  converted: 'Converted',
+  failed: 'Failed',
+};
 
 export const ProjectsPage = observer(function ProjectsPage() {
   const { projects, newProject } = useStores();
@@ -36,6 +45,21 @@ export const ProjectsPage = observer(function ProjectsPage() {
                 className="h-11 w-full rounded-lg border border-gray-300 bg-white pr-3 pl-9 text-sm shadow-xs outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
               />
             </label>
+            <div className="relative">
+              <select
+                aria-label="Filter by status"
+                value={projects.status}
+                onChange={(event) => projects.setStatus(event.target.value as StatusFilter)}
+                className="h-11 cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white pr-9 pl-3.5 text-sm text-gray-700 shadow-xs outline-none hover:bg-gray-50 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+              >
+                {STATUS_FILTERS.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-gray-500" />
+            </div>
             <Button variant="primary" size="lg" icon={Plus} onClick={newProject.open}>
               New project
             </Button>

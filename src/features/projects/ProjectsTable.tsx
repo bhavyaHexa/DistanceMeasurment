@@ -28,9 +28,15 @@ export const ProjectsTable = observer(function ProjectsTable() {
   }
 
   if (projects.isEmpty) {
-    return projects.search.trim() ? (
-      <StateCard title="No matching projects" text={`Nothing matches “${projects.search.trim()}”.`} />
-    ) : (
+    if (projects.search.trim() || projects.status !== 'all') {
+      return (
+        <StateCard
+          title="No matching projects"
+          text={projects.search.trim() ? `Nothing matches “${projects.search.trim()}”.` : 'No projects have this status.'}
+        />
+      );
+    }
+    return (
       <StateCard title="No projects yet" text="Create a project and upload a video to start measuring.">
         <Button variant="primary" icon={Plus} onClick={newProject.open}>
           New project

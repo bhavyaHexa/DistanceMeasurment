@@ -15,12 +15,16 @@ const LISTED_STATUSES: readonly RunStatus[] = [
   'failed',
 ];
 
+export const STATUS_FILTERS = ['all', 'saved','converted','created','failed'] as const;
+export type StatusFilter = (typeof STATUS_FILTERS)[number];
+
 /** The Projects page: a searchable, globally sorted list of saved and active runs. */
 export class ProjectsListStore {
   items: RunSummary[] = [];
   total = 0;
   page = 0;
   search = '';
+  status: StatusFilter = 'all';
   isLoading = false;
   hasLoaded = false;
   error: string | null = null;
@@ -62,6 +66,11 @@ export class ProjectsListStore {
     this.searchTimer = setTimeout(() => this.load(0), SEARCH_DEBOUNCE_MS);
   }
 
+  setStatus(value: StatusFilter) {
+    this.status = value;
+    void this.load(0);
+  }
+
   nextPage() {
     if (this.canGoForward) void this.load(this.page + 1);
   }
@@ -83,8 +92,9 @@ export class ProjectsListStore {
         { length: Math.ceil(requiredCount / API_PAGE_SIZE) },
         (_, index) => index * API_PAGE_SIZE,
       );
+      const statuses = this.status === 'all' ? LISTED_STATUSES : [this.status];
       const results = await Promise.all(
-        LISTED_STATUSES.map(async (status) => {
+        statuses.map(async (status) => {
           const pages = await Promise.all(
             offsets.map((offset) =>
               runsApi.list({
