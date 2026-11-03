@@ -15,7 +15,10 @@ export const LISTED_STATUSES: readonly RunStatus[] = [
   'failed',
 ];
 
-export const STATUS_FILTERS = ['all', 'saved','converted','created','failed'] as const;
+/** Statuses fetched for name checks but never shown in the Projects list. */
+const HIDDEN_STATUSES: readonly RunStatus[] = ['created'];
+
+export const STATUS_FILTERS = ['all', 'saved', 'converted', 'failed'] as const;
 export type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 /** The Projects page: a searchable, globally sorted list of saved and active runs. */
@@ -92,7 +95,9 @@ export class ProjectsListStore {
         { length: Math.ceil(requiredCount / API_PAGE_SIZE) },
         (_, index) => index * API_PAGE_SIZE,
       );
-      const statuses = this.status === 'all' ? LISTED_STATUSES : [this.status];
+      const statuses = (this.status === 'all' ? LISTED_STATUSES : [this.status]).filter(
+        (status) => !HIDDEN_STATUSES.includes(status),
+      );
       const results = await Promise.all(
         statuses.map(async (status) => {
           const pages = await Promise.all(

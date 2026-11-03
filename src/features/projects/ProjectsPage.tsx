@@ -11,7 +11,6 @@ import { ProjectsTable } from './ProjectsTable';
 const STATUS_LABELS: Record<StatusFilter, string> = {
   saved: 'Saved',
   all: 'All statuses',
-  created: 'Created',
   converted: 'Converted',
   failed: 'Failed',
 };
