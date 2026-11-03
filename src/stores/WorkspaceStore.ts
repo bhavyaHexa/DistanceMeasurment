@@ -111,5 +111,6 @@ export class WorkspaceStore {
 
   reset() {
     this.mode = 'calibrate';
+    this.displayUnit = 'in';
   }
 }

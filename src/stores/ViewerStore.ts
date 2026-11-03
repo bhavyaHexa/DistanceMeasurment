@@ -82,7 +82,10 @@ export class ViewerStore {
     this.root.history.push(() => this.movePoint(drag.target, drag.start));
   }
 
+  /** Back to the defaults a freshly opened project starts with. */
   reset() {
+    this.viewTool = 'rotate';
+    this.snapToEdges = true;
     this.hoverPoint = null;
     this.drag = null;
   }

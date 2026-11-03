@@ -24,6 +24,10 @@ export class UIStore {
     this.confirmRequest = request;
   }
 
+  reset() {
+    this.confirmRequest = null;
+  }
+
   confirm() {
     const request = this.confirmRequest;
     this.confirmRequest = null;

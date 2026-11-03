@@ -70,6 +70,8 @@ export class ProjectStore {
   isDownloadingModel = false;
   /** Set when an older save is open: its points are remapped once the model is oriented. */
   pendingFrameMigration = false;
+  /** Incremented on every open so a superseded open never writes into the store. */
+  private openCount = 0;
   /** Snapshot of the data at the last save/open, used to detect unsaved changes. */
   private savedSnapshot: string | null = null;
   private uploadAbort: AbortController | null = null;
@@ -220,11 +222,9 @@ export class ProjectStore {
   }
 
   async open(runId: string) {
-    if (this.runId === runId) {
-      if (!this.isOpening && this.isProcessing) this.startPolling(runId);
-      return;
-    }
+    // Always rebuild from the server: the UI must match this project, not whatever was left on screen.
     this.close();
+    const token = ++this.openCount;
     this.runId = runId;
     this.isOpening = true;
 
@@ -248,7 +248,7 @@ export class ProjectStore {
           saved = parseProjectFile(await runsApi.fetchProjectFile(run.json_url));
         }
       }
-      if (this.runId !== runId) return;
+      if (token !== this.openCount) return;
 
       runInAction(() => {
         const { model, calibration, measurements, workspace } = this.root;
@@ -273,7 +273,7 @@ export class ProjectStore {
       }
     } catch (error) {
       runInAction(() => {
-        if (this.runId !== runId) return;
+        if (token !== this.openCount) return;
         this.openError = errorMessage(error, 'Could not open this project.');
         this.isOpening = false;
       });
@@ -369,7 +369,8 @@ export class ProjectStore {
     this.savedSnapshot = null;
     this.pendingFrameMigration = false;
 
-    const { model, calibration, measurements, viewer, workspace, history } = this.root;
+    const { ui, model, calibration, measurements, viewer, workspace, history } = this.root;
+    ui.reset();
     model.reset();
     calibration.reset();
     measurements.reset();
