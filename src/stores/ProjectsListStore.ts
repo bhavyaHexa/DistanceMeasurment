@@ -6,7 +6,14 @@ import type { RunStatus, RunSummary } from '@/types/api';
 const PAGE_SIZE = 20;
 const API_PAGE_SIZE = 100;
 const SEARCH_DEBOUNCE_MS = 300;
-const LISTED_STATUSES: readonly RunStatus[] = ['saved', 'queued', 'processing'];
+const LISTED_STATUSES: readonly RunStatus[] = [
+  'created',
+  'queued',
+  'processing',
+  'converted',
+  'saved',
+  'failed',
+];
 
 /** The Projects page: a searchable, globally sorted list of saved and active runs. */
 export class ProjectsListStore {
@@ -41,6 +48,10 @@ export class ProjectsListStore {
     return this.page + 1 < this.pageCount && !this.isLoading;
   }
 
+  get hasActiveRuns(): boolean {
+    return this.items.some((item) => item.status === 'queued' || item.status === 'processing');
+  }
+
   get isEmpty(): boolean {
     return this.hasLoaded && !this.isLoading && !this.error && this.items.length === 0;
   }
@@ -59,11 +70,12 @@ export class ProjectsListStore {
     if (this.canGoBack) void this.load(this.page - 1);
   }
 
-  async load(page = this.page) {
+  /** `silent` refreshes in the background without the loading state (no dimming of the table). */
+  async load(page = this.page, silent = false) {
     const requestId = ++this.requestId;
     this.page = page;
-    this.isLoading = true;
-    this.error = null;
+    if (!silent) this.isLoading = true;
+    if (!silent) this.error = null;
 
     try {
       const requiredCount = (page + 1) * PAGE_SIZE;
@@ -105,7 +117,7 @@ export class ProjectsListStore {
     } catch (error) {
       if (requestId !== this.requestId) return;
       runInAction(() => {
-        this.error = errorMessage(error, 'Could not load projects.');
+        if (!silent) this.error = errorMessage(error, 'Could not load projects.');
       });
     } finally {
       if (requestId === this.requestId) {

@@ -2,9 +2,12 @@ import { useEffect } from 'react';
 import { useBlocker } from 'react-router';
 import { useStores } from './useStores';
 
-/** Asks before leaving the workspace (in-app navigation or closing the tab) with unsaved changes. */
-export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
-  const { ui } = useStores();
+/**
+ * Asks before leaving the workspace (in-app navigation or closing the tab) with unsaved changes.
+ * In-app navigation offers to save the changed dimensions first.
+ */
+export function useUnsavedChangesGuard(hasUnsavedChanges: boolean, save: () => Promise<void>) {
+  const { ui, project } = useStores();
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname,
@@ -13,14 +16,20 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
   useEffect(() => {
     if (blocker.state !== 'blocked') return;
     ui.askConfirm({
-      title: 'Leave without saving?',
-      description: 'Your latest changes to this project have not been saved.',
-      confirmLabel: 'Leave',
-      tone: 'danger',
-      onConfirm: () => blocker.proceed(),
+      title: 'Dimensions changed',
+      description: 'Your dimension changes have not been saved. Save them before leaving?',
+      confirmLabel: 'Save & leave',
+      secondaryLabel: 'Leave without saving',
+      onConfirm: () => {
+        void save().then(() => {
+          if (project.hasUnsavedChanges) blocker.reset();
+          else blocker.proceed();
+        });
+      },
+      onSecondary: () => blocker.proceed(),
       onCancel: () => blocker.reset(),
     });
-  }, [blocker, ui]);
+  }, [blocker, ui, project, save]);
 
   useEffect(() => {
     if (!hasUnsavedChanges) return;

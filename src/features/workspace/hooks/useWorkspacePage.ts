@@ -16,5 +16,5 @@ export function useWorkspacePage() {
   }, [runId, project]);
 
   useKeyboardShortcuts();
-  useUnsavedChangesGuard(project.hasUnsavedChanges);
+  useUnsavedChangesGuard(project.hasUnsavedChanges, project.save);
 }

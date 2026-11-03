@@ -19,6 +19,11 @@ export const ConfirmDialog = observer(function ConfirmDialog() {
           <Button variant="secondary" onClick={ui.cancelConfirm} autoFocus>
             Cancel
           </Button>
+          {request?.secondaryLabel && (
+            <Button variant="secondary" onClick={ui.confirmSecondary}>
+              {request.secondaryLabel}
+            </Button>
+          )}
           <Button
             variant="primary"
             className={request?.tone === 'danger' ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' : undefined}

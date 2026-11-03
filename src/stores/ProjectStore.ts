@@ -71,6 +71,9 @@ export class ProjectStore {
   /** Snapshot of the data at the last save/open, used to detect unsaved changes. */
   private savedSnapshot: string | null = null;
   private uploadAbort: AbortController | null = null;
+  private readonly activeUploads = new Map<string, { abort: AbortController; progress: number }>();
+  /** Run ids whose video is uploading from this tab (drives the History "Uploading" badge). */
+  uploadingRunIds = new Set<string>();
   private processingAbort: AbortController | null = null;
   private healthRequest: Promise<void> | null = null;
 
@@ -80,13 +83,14 @@ export class ProjectStore {
     this.root = root;
     makeAutoObservable<
       this,
-      'root' | 'savedSnapshot' | 'uploadAbort' | 'processingAbort' | 'healthRequest'
+      'root' | 'savedSnapshot' | 'uploadAbort' | 'activeUploads' | 'processingAbort' | 'healthRequest'
     >(
       this,
       {
         root: false,
         savedSnapshot: false,
         uploadAbort: false,
+        activeUploads: false,
         processingAbort: false,
         healthRequest: false,
       },
@@ -223,6 +227,13 @@ export class ProjectStore {
     this.runId = runId;
     this.isOpening = true;
 
+    const activeUpload = this.activeUploads.get(runId);
+    if (activeUpload) {
+      this.uploadAbort = activeUpload.abort;
+      this.uploadPhase = 'uploading';
+      this.uploadProgress = activeUpload.progress;
+    }
+
     try {
       let run = await runsApi.get(runId);
       let saved = null;
@@ -254,6 +265,9 @@ export class ProjectStore {
       if (this.isProcessing) {
         this.saveActiveRun(true);
         this.startPolling(runId);
+      } else if (run.status === 'converted' && run.glb_url) {
+        // The model finished while the project was closed: keep it in History.
+        void this.save();
       }
     } catch (error) {
       runInAction(() => {
@@ -284,6 +298,10 @@ export class ProjectStore {
 
   cancelUpload() {
     this.uploadAbort?.abort();
+    if (this.runId) {
+      this.uploadingRunIds.delete(this.runId);
+      this.activeUploads.delete(this.runId);
+    }
     this.uploadAbort = null;
     this.uploadPhase = 'idle';
   }
@@ -326,7 +344,9 @@ export class ProjectStore {
 
   /** Clears the open project and everything shown in the workspace. */
   close() {
-    this.cancelUpload();
+    // An in-flight upload keeps running in the background; it is re-attached if the project is reopened.
+    this.uploadAbort = null;
+    this.uploadPhase = 'idle';
     this.stopPolling();
     this.saveActiveRun(false);
     this.runId = null;
@@ -354,6 +374,9 @@ export class ProjectStore {
     const runId = this.runId;
     if (!runId) return;
     const abort = new AbortController();
+    const entry = { abort, progress: 0 };
+    this.activeUploads.set(runId, entry);
+    this.uploadingRunIds.add(runId);
     this.uploadAbort = abort;
     this.uploadPhase = 'uploading';
     this.uploadProgress = 0;
@@ -364,9 +387,12 @@ export class ProjectStore {
         signal: abort.signal,
         onUploadProgress: (percent) =>
           runInAction(() => {
-            this.uploadProgress = percent;
+            entry.progress = percent;
+            if (this.runId === runId) this.uploadProgress = percent;
           }),
       });
+      this.activeUploads.delete(runId);
+      runInAction(() => this.uploadingRunIds.delete(runId));
       if (this.runId !== runId) return;
       runInAction(() => {
         this.status = result.status;
@@ -377,6 +403,8 @@ export class ProjectStore {
       this.saveActiveRun(true);
       this.startPolling(runId);
     } catch (error) {
+      this.activeUploads.delete(runId);
+      runInAction(() => this.uploadingRunIds.delete(runId));
       if (isAbortError(error) || this.runId !== runId) return;
       runInAction(() => {
         this.uploadPhase = 'idle';
@@ -411,6 +439,7 @@ export class ProjectStore {
               this.markSaved();
             });
             this.saveActiveRun(false);
+            if (run.status === 'converted') await this.save();
             return;
           }
           if (run.status === 'failed') {

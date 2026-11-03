@@ -7,6 +7,9 @@ export interface ConfirmRequest {
   tone?: 'danger' | 'default';
   onConfirm: () => void;
   onCancel?: () => void;
+  /** Optional extra action (e.g. "Leave without saving") shown between Cancel and the primary button. */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
 }
 
 /** App-wide UI state that isn't tied to one feature: the confirmation dialog. */
@@ -25,6 +28,12 @@ export class UIStore {
     const request = this.confirmRequest;
     this.confirmRequest = null;
     request?.onConfirm();
+  }
+
+  confirmSecondary() {
+    const request = this.confirmRequest;
+    this.confirmRequest = null;
+    request?.onSecondary?.();
   }
 
   cancelConfirm() {

@@ -15,7 +15,7 @@ const COLUMN = 'px-5 py-3 text-left text-xs font-medium text-gray-600';
 const CELL = 'px-5 py-3.5 text-sm whitespace-nowrap text-gray-700';
 
 export const ProjectsTable = observer(function ProjectsTable() {
-  const { projects, newProject } = useStores();
+  const { projects, newProject, project } = useStores();
 
   if (projects.error) {
     return (
@@ -74,7 +74,7 @@ export const ProjectsTable = observer(function ProjectsTable() {
                   </Link>
                 </td>
                 <td className={CELL}>
-                  <Badge tone={STATUS_TONE[run.status] ?? 'gray'}>{capitalize(run.status)}</Badge>
+                  <Badge tone={project.uploadingRunIds.has(run.run_id) ? 'blue' : (STATUS_TONE[run.status] ?? 'gray')}>{project.uploadingRunIds.has(run.run_id) ? 'Uploading video' : capitalize(run.status)}</Badge>
                 </td>
                 <td className={CELL}>{formatDateTime(run.saved_at)}</td>
                 <td className={`${CELL} text-gray-600`}>{formatDateTime(run.created_at)}</td>
