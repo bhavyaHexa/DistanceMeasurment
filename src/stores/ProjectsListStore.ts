@@ -6,7 +6,7 @@ import type { RunStatus, RunSummary } from '@/types/api';
 const PAGE_SIZE = 20;
 const API_PAGE_SIZE = 100;
 const SEARCH_DEBOUNCE_MS = 300;
-const LISTED_STATUSES: readonly RunStatus[] = [
+export const LISTED_STATUSES: readonly RunStatus[] = [
   'created',
   'queued',
   'processing',

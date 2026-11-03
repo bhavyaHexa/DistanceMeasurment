@@ -1,8 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { errorMessage } from '@/services/http';
+import { runsApi } from '@/services/runsApi';
 import type { RootStore } from './RootStore';
+import { LISTED_STATUSES } from './ProjectsListStore';
 
 const MAX_NAME_LENGTH = 255;
+const NAME_CHECK_LIMIT = 100;
 
 /** State of the "New project" dialog: project name and project creation. */
 export class NewProjectFormStore {
@@ -51,6 +54,13 @@ export class NewProjectFormStore {
     this.submitError = null;
 
     try {
+      if (await this.isNameTaken(this.trimmedName)) {
+        runInAction(() => {
+          this.isSubmitting = false;
+          this.submitError = `A project named "${this.trimmedName}" already exists. Choose a different name.`;
+        });
+        return null;
+      }
       const runId = await this.root.project.create(this.trimmedName);
       runInAction(() => {
         this.isSubmitting = false;
@@ -64,6 +74,17 @@ export class NewProjectFormStore {
       });
       return null;
     }
+  }
+
+  /** Names are compared ignoring case and surrounding spaces. The API only lists runs per status. */
+  private async isNameTaken(name: string): Promise<boolean> {
+    const key = name.toLowerCase();
+    const results = await Promise.all(
+      LISTED_STATUSES.map((status) => runsApi.list({ status, project_name: name, limit: NAME_CHECK_LIMIT })),
+    );
+    return results.some((result) =>
+      result.items.some((item) => item.project_name.trim().toLowerCase() === key),
+    );
   }
 
   private reset() {
