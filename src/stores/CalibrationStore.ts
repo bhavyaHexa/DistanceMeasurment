@@ -109,6 +109,13 @@ export class CalibrationStore {
     this.lengthInput = '';
   }
 
+  /** Moves both the applied and the draft points with `remap`. */
+  remapPoints(remap: (point: Vec3) => Vec3) {
+    const map = (point: Vec3 | null) => (point ? remap(point) : null);
+    this.applied = { a: map(this.applied.a), b: map(this.applied.b) };
+    this.draft = { a: map(this.draft.a), b: map(this.draft.b) };
+  }
+
   toJSON(): SavedCalibration {
     return { calA: this.applied.a, calB: this.applied.b, calLength: this.length, calUnit: this.unit };
   }

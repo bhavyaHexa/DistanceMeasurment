@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { ApiError, errorMessage, isAbortError } from '@/services/http';
 import { runsApi } from '@/services/runsApi';
 import type { Health, RunDetail, RunStatus } from '@/types/api';
-import type { SavedMeasurementData } from '@/types/projectFile';
+import { SAVE_VERSION, type SavedMeasurementData } from '@/types/projectFile';
 import { downloadFromUrl, toFileStem } from '@/utils/download';
 import { buildProjectFile, parseProjectFile } from '@/utils/projectFile';
 import type { RootStore } from './RootStore';
@@ -68,6 +68,8 @@ export class ProjectStore {
   isSaving = false;
   saveError: string | null = null;
   isDownloadingModel = false;
+  /** Set when an older save is open: its points are remapped once the model is oriented. */
+  pendingFrameMigration = false;
   /** Snapshot of the data at the last save/open, used to detect unsaved changes. */
   private savedSnapshot: string | null = null;
   private uploadAbort: AbortController | null = null;
@@ -83,12 +85,11 @@ export class ProjectStore {
     this.root = root;
     makeAutoObservable<
       this,
-      'root' | 'savedSnapshot' | 'uploadAbort' | 'activeUploads' | 'processingAbort' | 'healthRequest'
+      'root' | 'uploadAbort' | 'activeUploads' | 'processingAbort' | 'healthRequest'
     >(
       this,
       {
         root: false,
-        savedSnapshot: false,
         uploadAbort: false,
         activeUploads: false,
         processingAbort: false,
@@ -117,7 +118,7 @@ export class ProjectStore {
 
   private get measurementData(): SavedMeasurementData {
     const { measurements, nextColorIndex } = this.root.measurements.toJSON();
-    return { version: 1, calibration: this.root.calibration.toJSON(), measurements, nextColorIndex };
+    return { version: SAVE_VERSION, calibration: this.root.calibration.toJSON(), measurements, nextColorIndex };
   }
 
   private get snapshot(): string {
@@ -256,6 +257,7 @@ export class ProjectStore {
           calibration.load(saved.data.calibration);
           measurements.load(saved.data.measurements, saved.data.nextColorIndex);
           if (saved.displayUnit) workspace.setDisplayUnit(saved.displayUnit);
+          this.pendingFrameMigration = saved.data.version < SAVE_VERSION;
         }
         if (run.glb_url && model.url !== run.glb_url) model.load(run.glb_url);
         workspace.showInitialStep();
@@ -265,7 +267,7 @@ export class ProjectStore {
       if (this.isProcessing) {
         this.saveActiveRun(true);
         this.startPolling(runId);
-      } else if (run.status === 'converted' && run.glb_url) {
+      } else if (run.status === 'converted' && run.glb_url && !this.pendingFrameMigration) {
         // The model finished while the project was closed: keep it in History.
         void this.save();
       }
@@ -342,6 +344,11 @@ export class ProjectStore {
     }
   }
 
+  /** Called once the older save's points have been remapped onto the oriented model. */
+  finishFrameMigration() {
+    this.pendingFrameMigration = false;
+  }
+
   /** Clears the open project and everything shown in the workspace. */
   close() {
     // An in-flight upload keeps running in the background; it is re-attached if the project is reopened.
@@ -360,6 +367,7 @@ export class ProjectStore {
     this.processingProgress = null;
     this.saveError = null;
     this.savedSnapshot = null;
+    this.pendingFrameMigration = false;
 
     const { model, calibration, measurements, viewer, workspace, history } = this.root;
     model.reset();

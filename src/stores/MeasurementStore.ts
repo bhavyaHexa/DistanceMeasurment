@@ -154,6 +154,11 @@ export class MeasurementStore {
     }
   }
 
+  /** Moves every point with `remap`, e.g. when a save made before the orientation fix is opened. */
+  remapPoints(remap: (point: Vec3) => Vec3) {
+    this.items = this.items.map((m) => ({ ...m, a: m.a && remap(m.a), b: m.b && remap(m.b) }));
+  }
+
   clearAll() {
     const previous = this.items;
     this.reset();

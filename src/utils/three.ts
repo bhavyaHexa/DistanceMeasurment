@@ -1,4 +1,31 @@
 import * as THREE from 'three';
+import type { Vec3 } from '@/types/geometry';
+
+/**
+ * Maps a point saved while `object` was left unrotated onto the same spot of the model once it is
+ * rotated about X by `rotationX` and placed on the ground. Both placements are measured on a probe
+ * copy, so `object` itself is not touched.
+ */
+export function legacyPointRemap(object: THREE.Object3D, rotationX: number): (point: Vec3) => Vec3 {
+  const legacyOffset = placedOffset(object, 0);
+  const currentOffset = placedOffset(object, rotationX);
+  const xAxis = new THREE.Vector3(1, 0, 0);
+  return (point) =>
+    new THREE.Vector3(...point)
+      .sub(legacyOffset)
+      .applyAxisAngle(xAxis, rotationX)
+      .add(currentOffset)
+      .toArray() as Vec3;
+}
+
+/** Where `placeOnGround` would move `object` if it were rotated about X by `rotationX`. */
+function placedOffset(object: THREE.Object3D, rotationX: number): THREE.Vector3 {
+  const probe = object.clone();
+  probe.position.set(0, 0, 0);
+  probe.rotation.set(rotationX, 0, 0);
+  placeOnGround(probe);
+  return probe.position;
+}
 
 /**
  * Moves `object` so it's centred on the origin in X/Z and rests on the ground plane.

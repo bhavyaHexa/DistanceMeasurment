@@ -23,8 +23,14 @@ export interface SavedMeasurement {
   createdAt?: number;
 }
 
+/**
+ * Saves before 2 stored points in the unrotated model frame (Z-up exports stood on the X-Y plane).
+ * Version 2 stores points after the model is oriented with Y up.
+ */
+export const SAVE_VERSION = 2;
+
 export interface SavedMeasurementData {
-  version: 1;
+  version: 1 | typeof SAVE_VERSION;
   calibration: SavedCalibration;
   measurements: SavedMeasurement[];
   nextColorIndex: number;

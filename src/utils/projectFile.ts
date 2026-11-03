@@ -1,6 +1,12 @@
 import type { Vec3 } from '@/types/geometry';
 import type { MeasureMode, Unit } from '@/types/measurement';
-import type { ProjectFile, SavedCalibration, SavedMeasurement, SavedMeasurementData } from '@/types/projectFile';
+import {
+  SAVE_VERSION,
+  type ProjectFile,
+  type SavedCalibration,
+  type SavedMeasurement,
+  type SavedMeasurementData,
+} from '@/types/projectFile';
 import { makeId } from './ids';
 import { UNITS } from './units';
 
@@ -49,7 +55,7 @@ export function parseProjectFile(raw: unknown): { data: SavedMeasurementData; di
   const data = raw.measurementData;
   return {
     data: {
-      version: 1,
+      version: data.version === SAVE_VERSION ? SAVE_VERSION : 1,
       calibration: parseCalibration(data.calibration),
       measurements: Array.isArray(data.measurements)
         ? data.measurements.map(parseMeasurement).filter((m): m is SavedMeasurement => m !== null)
