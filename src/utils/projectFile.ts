@@ -30,6 +30,7 @@ function parseCalibration(raw: unknown): SavedCalibration {
     calB: asVec3(c.calB),
     calLength: typeof c.calLength === 'number' ? c.calLength : null,
     calUnit: isUnit(c.calUnit) ? c.calUnit : 'in',
+    calMode: MEASURE_MODES.includes(c.calMode as MeasureMode) ? (c.calMode as MeasureMode) : 'y',
   };
 }
 

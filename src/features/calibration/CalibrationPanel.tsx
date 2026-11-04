@@ -3,10 +3,13 @@ import { PanelHeader } from '@/components/PanelHeader';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useStores } from '@/hooks/useStores';
+import { calibrationMode } from '@/utils/calibrationModes';
+import { CalibrationModeSwitch } from './CalibrationModeSwitch';
 import { CalibrationPointRow } from './CalibrationPointRow';
 
 export const CalibrationPanel = observer(function CalibrationPanel() {
   const { calibration, workspace } = useStores();
+  const modeName = calibrationMode(calibration.draftMode).name;
 
   return (
     <form
@@ -18,15 +21,20 @@ export const CalibrationPanel = observer(function CalibrationPanel() {
     >
       <PanelHeader
         title="Set scale"
-        description="Click two points whose real vertical distance you know, such as a marked height or a floor-to-ceiling span."
+        description="Click two points whose real distance you know, then choose whether it is the absolute, horizontal, vertical or depth distance."
       />
 
       <ol className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
         <CalibrationPointRow end="a" />
         <CalibrationPointRow end="b" />
+        {calibration.nextPoint === null && (
+          <li className="pt-2">
+            <CalibrationModeSwitch />
+          </li>
+        )}
         <li className="pt-2">
           <TextField
-            label="Real vertical distance A → B"
+            label={`Real ${modeName} distance A → B`}
             inputMode="decimal"
             placeholder="0.00"
             value={calibration.lengthInput}

@@ -2,6 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import type { Vec3 } from '@/types/geometry';
 import type { Unit } from '@/types/measurement';
 import type { Hint, Step } from '@/types/workspace';
+import { calibrationMode } from '@/utils/calibrationModes';
 import type { RootStore } from './RootStore';
 
 const STEP_ORDER: readonly Step[] = ['upload', 'calibrate', 'measure'];
@@ -55,7 +56,8 @@ export class WorkspaceStore {
     if (this.step === 'calibrate') {
       if (calibration.nextPoint === 'a') return { text: 'Click the model to place point A', tone: 'calibration' };
       if (calibration.nextPoint === 'b') return { text: 'Click the model to place point B', tone: 'calibration' };
-      return { text: 'Enter the real vertical distance between A and B, then apply', tone: 'success' };
+      const name = calibrationMode(calibration.draftMode).name;
+      return { text: `Choose how to scale, enter the real ${name} distance between A and B, then apply`, tone: 'success' };
     }
 
     if (this.step === 'measure') {

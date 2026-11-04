@@ -3,6 +3,7 @@ import { Download, Plus, Ruler } from 'lucide-react';
 import { PanelHeader } from '@/components/PanelHeader';
 import { Button } from '@/components/ui/Button';
 import { useStores } from '@/hooks/useStores';
+import { calibrationMode } from '@/utils/calibrationModes';
 import { useMeasurementActions } from './hooks/useMeasurementActions';
 import { MeasurementRow } from './MeasurementRow';
 
@@ -14,7 +15,7 @@ export const MeasurementPanel = observer(function MeasurementPanel() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mx-4 mt-4 flex items-center gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900">
         <Ruler aria-hidden className="size-4 shrink-0" />
-        <span className="flex-1">Scale: A → B = {calibration.summary} (vertical)</span>
+        <span className="flex-1">Scale: A → B = {calibration.summary} ({calibrationMode(calibration.mode).name})</span>
         <button
           type="button"
           onClick={() => workspace.openStep('calibrate')}

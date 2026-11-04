@@ -24,7 +24,7 @@ export function Select<T extends string>({ label, hideLabel, value, options, onC
           id={id}
           value={value}
           onChange={(event) => onChange(event.target.value as T)}
-          className="h-9 cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white pr-8 pl-3 text-sm text-gray-700 shadow-xs hover:bg-gray-50"
+          className="h-9 w-full cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white pr-8 pl-3 text-sm text-gray-700 shadow-xs hover:bg-gray-50"
         >
           {options.map((option) => (
             <option key={option} value={option}>

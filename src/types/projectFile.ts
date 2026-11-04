@@ -10,6 +10,8 @@ export interface SavedCalibration {
   calB: Vec3 | null;
   calLength: number | null;
   calUnit: Unit;
+  /** Which distance the length refers to. Absent in older saves, which meant vertical (Y). */
+  calMode?: MeasureMode;
 }
 
 export interface SavedMeasurement {
