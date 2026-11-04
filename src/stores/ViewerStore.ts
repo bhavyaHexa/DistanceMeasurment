@@ -52,10 +52,6 @@ export class ViewerStore {
     this.viewTool = tool;
   }
 
-  setSnapToEdges(enabled: boolean) {
-    this.snapToEdges = enabled;
-  }
-
   requestFit() {
     this.fitRequest++;
   }

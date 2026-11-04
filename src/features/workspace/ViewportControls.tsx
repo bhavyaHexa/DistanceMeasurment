@@ -12,7 +12,7 @@ const HINT_DOT: Record<HintTone, string> = {
   success: 'bg-green-400',
 };
 
-/** Floating controls over the 3D view: camera tools, snapping and the current hint. */
+/** Floating controls over the 3D view: camera tools and the current hint. */
 export const ViewportControls = observer(function ViewportControls() {
   const { viewer, workspace } = useStores();
   const hint = workspace.hint;
@@ -52,16 +52,6 @@ export const ViewportControls = observer(function ViewportControls() {
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col-reverse items-center gap-2 sm:inset-x-4 sm:bottom-4 sm:flex-row sm:items-end">
-        <label className="pointer-events-auto flex h-10 cursor-pointer items-center gap-2.5 self-start rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-700 shadow-sm sm:self-auto">
-          <input
-            type="checkbox"
-            checked={viewer.snapToEdges}
-            onChange={(event) => viewer.setSnapToEdges(event.target.checked)}
-            className="size-4 accent-blue-600"
-          />
-          Snap to edges
-        </label>
-
         {hint && (
           <div className="flex flex-1 justify-center sm:pr-36">
             <p
