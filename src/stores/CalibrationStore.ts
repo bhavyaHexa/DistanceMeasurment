@@ -17,11 +17,11 @@ export class CalibrationStore {
   applied: CalibrationPoints = EMPTY_POINTS;
   length: number | null = null;
   unit: Unit = 'in';
-  mode: MeasureMode = 'y';
+  mode: MeasureMode = 'euclidean';
 
   draft: CalibrationPoints = EMPTY_POINTS;
   lengthInput = '';
-  draftMode: MeasureMode = 'y';
+  draftMode: MeasureMode = 'euclidean';
 
   private readonly root: RootStore;
 
@@ -120,10 +120,10 @@ export class CalibrationStore {
     this.applied = EMPTY_POINTS;
     this.length = null;
     this.unit = 'in';
-    this.mode = 'y';
+    this.mode = 'euclidean';
     this.draft = EMPTY_POINTS;
     this.lengthInput = '';
-    this.draftMode = 'y';
+    this.draftMode = 'euclidean';
   }
 
   /** Moves both the applied and the draft points with `remap`. */
