@@ -13,6 +13,8 @@ interface ActiveDrag {
 export class ViewerStore {
   viewTool: ViewTool = 'rotate';
   snapToEdges = true;
+  /** False shows the model in plain grey, like a CAD model, instead of its photo texture. */
+  showTexture = true;
   /** Incremented to ask the camera to frame the model. */
   fitRequest = 0;
   /** Where the next click would land, shown as a snap ring while placing points. */
@@ -52,6 +54,10 @@ export class ViewerStore {
     this.viewTool = tool;
   }
 
+  toggleTexture() {
+    this.showTexture = !this.showTexture;
+  }
+
   requestFit() {
     this.fitRequest++;
   }
@@ -82,6 +88,7 @@ export class ViewerStore {
   reset() {
     this.viewTool = 'rotate';
     this.snapToEdges = true;
+    this.showTexture = true;
     this.hoverPoint = null;
     this.drag = null;
   }

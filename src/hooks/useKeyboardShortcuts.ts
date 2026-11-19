@@ -8,7 +8,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * Workspace shortcuts: Esc cancels placement, Ctrl/⌘+Z undoes, Delete removes the selected
- * measurement, R / P switch rotate / pan, F fits the model in view.
+ * measurement, R / P switch rotate / pan, F fits the model in view, T toggles the texture.
  */
 export function useKeyboardShortcuts() {
   const { ui, history, measurements, viewer, workspace } = useStores();
@@ -44,6 +44,10 @@ export function useKeyboardShortcuts() {
         case 'f':
         case 'F':
           viewer.requestFit();
+          break;
+        case 't':
+        case 'T':
+          viewer.toggleTexture();
           break;
       }
     };

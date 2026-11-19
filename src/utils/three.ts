@@ -58,6 +58,35 @@ export function makeMatte(root: THREE.Object3D) {
   });
 }
 
+/**
+ * Untextured "CAD" look. Matcap shading ignores scene lights and darkens surfaces facing away from
+ * the camera, so the grey model keeps clear depth. Shared by every mesh and never disposed.
+ */
+const CLAY_COLOR = '#d4d7dc';
+const CLAY_SMOOTH = new THREE.MeshMatcapMaterial({ color: CLAY_COLOR, side: THREE.DoubleSide });
+/** For meshes without normals: facets are shaded from screen-space derivatives instead. */
+const CLAY_FLAT = new THREE.MeshMatcapMaterial({ color: CLAY_COLOR, side: THREE.DoubleSide, flatShading: true });
+const ORIGINAL_MATERIAL = 'originalMaterial';
+
+/**
+ * Shows `root` with its own textured materials, or swaps every mesh to plain grey. The originals
+ * are kept on each mesh's userData, so toggling back restores them untouched.
+ */
+export function setTextured(root: THREE.Object3D, textured: boolean) {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const original = mesh.userData[ORIGINAL_MATERIAL] as THREE.Mesh['material'] | undefined;
+    if (textured) {
+      if (original) mesh.material = original;
+      delete mesh.userData[ORIGINAL_MATERIAL];
+    } else if (!original) {
+      mesh.userData[ORIGINAL_MATERIAL] = mesh.material;
+      mesh.material = mesh.geometry.hasAttribute('normal') ? CLAY_SMOOTH : CLAY_FLAT;
+    }
+  });
+}
+
 /** Frees the GPU resources (geometry, materials, textures) held by `root` and its children. */
 export function disposeObject3D(root: THREE.Object3D) {
   root.traverse((obj) => {

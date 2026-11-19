@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useProgress } from '@react-three/drei';
 import type * as THREE from 'three';
 import { useStores } from '@/hooks/useStores';
-import { disposeObject3D, legacyPointRemap, makeMatte, placeOnGround } from '@/utils/three';
+import { disposeObject3D, legacyPointRemap, makeMatte, placeOnGround, setTextured } from '@/utils/three';
 
 /**
  * Photogrammetry exports are Z-up, so without this the model stands on the X-Y plane instead of
@@ -11,7 +11,7 @@ import { disposeObject3D, legacyPointRemap, makeMatte, placeOnGround } from '@/u
 const X_Z_Plane = -Math.PI / 2;
 
 /** Reports download progress, sits the model on the grid centred at the origin, and frames it. */
-export function useModelSetup(scene: THREE.Object3D) {
+export function useModelSetup(scene: THREE.Object3D, showTexture: boolean) {
   const { model, viewer, project, measurements, calibration } = useStores();
   const { progress } = useProgress();
 
@@ -31,6 +31,12 @@ export function useModelSetup(scene: THREE.Object3D) {
     makeMatte(scene);
     model.setLoaded(scene, placeOnGround(scene));
     viewer.requestFit();
-    return () => disposeObject3D(scene);
+    return () => {
+      // Put the real materials back first so their textures are the ones disposed, not the shared grey.
+      setTextured(scene, true);
+      disposeObject3D(scene);
+    };
   }, [scene, model, viewer, project, measurements, calibration]);
+
+  useEffect(() => setTextured(scene, showTexture), [scene, showTexture]);
 }

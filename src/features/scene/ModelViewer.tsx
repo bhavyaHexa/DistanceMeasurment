@@ -1,11 +1,14 @@
+import { observer } from 'mobx-react-lite';
 import { useGLTF } from '@react-three/drei';
+import { useStores } from '@/hooks/useStores';
 import { useModelPointer } from './hooks/useModelPointer';
 import { useModelSetup } from './hooks/useModelSetup';
 
-export function ModelViewer({ url }: { url: string }) {
+export const ModelViewer = observer(function ModelViewer({ url }: { url: string }) {
   const { scene } = useGLTF(url);
-  useModelSetup(scene);
+  const { viewer } = useStores();
+  useModelSetup(scene, viewer.showTexture);
   const pointer = useModelPointer();
 
   return <primitive object={scene} {...pointer} />;
-}
+});

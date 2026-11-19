@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
-import { Maximize, Move, Rotate3d } from 'lucide-react';
+// The `…Icon` names avoid shadowing the DOM's global `Image` constructor.
+import { ImageIcon, ImageOffIcon, Maximize, Move, Rotate3d } from 'lucide-react';
 import { IconButton } from '@/components/ui/IconButton';
 import { useStores } from '@/hooks/useStores';
 import type { HintTone } from '@/types/workspace';
@@ -48,6 +49,15 @@ export const ViewportControls = observer(function ViewportControls() {
           size="lg"
           className="rounded-none border-t border-gray-100"
           onClick={viewer.requestFit}
+        />
+        <IconButton
+          icon={viewer.showTexture ? ImageIcon : ImageOffIcon}
+          label={viewer.showTexture ? 'Hide texture (T)' : 'Show texture (T)'}
+          size="lg"
+          className="rounded-none border-t border-gray-100"
+          active={!viewer.showTexture}
+          aria-pressed={!viewer.showTexture}
+          onClick={viewer.toggleTexture}
         />
       </div>
 
