@@ -29,8 +29,8 @@ export function AxisGuides({
               color={AXIS_COLORS[axis]}
               lineWidth={emphasized ? 5 : 2}
               dashed={!emphasized}
-              dashSize={0.2}
-              gapSize={0.1}
+              dashSize={0.06}
+              gapSize={0.04}
               depthTest={false}
               renderOrder={emphasized ? 999 : 997}
             />

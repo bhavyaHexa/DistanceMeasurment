@@ -19,8 +19,8 @@ export function SegmentLine({ a, b, color, dashed = false, highlighted = false }
         color={color}
         lineWidth={dashed ? 2.5 : 4}
         dashed={dashed}
-        dashSize={0.2}
-        gapSize={0.1}
+        dashSize={0.06}
+        gapSize={0.04}
         depthTest={false}
         renderOrder={998}
       />

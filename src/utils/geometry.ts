@@ -27,6 +27,17 @@ export function axisLegs(a: Vec3, b: Vec3): Record<Axis, [Vec3, Vec3]> {
   return { y: [a, afterY], x: [afterY, afterX], z: [afterX, b] };
 }
 
+/**
+ * The segment that `mode` measures: a→b for straight-line, otherwise a straight run from `a`
+ * along the axis to where that axis coordinate matches `b`.
+ */
+export function measuredSegment(a: Vec3, b: Vec3, mode: MeasureMode): [Vec3, Vec3] {
+  if (mode === 'euclidean') return [a, b];
+  const end: Vec3 = [a[0], a[1], a[2]];
+  end[AXIS_INDEX[mode]] = b[AXIS_INDEX[mode]];
+  return [a, end];
+}
+
 export function midpoint(a: Vec3, b: Vec3): Vec3 {
   return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
 }
