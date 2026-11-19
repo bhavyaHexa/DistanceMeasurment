@@ -51,7 +51,7 @@ export const SceneCanvas = observer(function SceneCanvas() {
         }}
       />
 
-      <GizmoHelper alignment="top-right" margin={[64, 64]}>
+      <GizmoHelper alignment="bottom-right" margin={[64, 64]}>
         <GizmoViewport />
       </GizmoHelper>
 

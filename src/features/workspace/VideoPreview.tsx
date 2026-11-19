@@ -11,9 +11,8 @@ function formatDuration(seconds: number): string {
 }
 
 /**
- * Small thumbnail of the original video over the viewport; opens the full player on click.
- * Sits below the axes gizmo: SceneCanvas centres it 64px in from the top-right corner and its
- * axis heads reach ~64px from that centre, so it ends ~128px down.
+ * Small thumbnail of the original video in the viewport's top-right corner (the axes gizmo is
+ * bottom-right); opens the full player on click.
  */
 export const VideoPreview = observer(function VideoPreview() {
   const { project } = useStores();
@@ -47,7 +46,7 @@ export const VideoPreview = observer(function VideoPreview() {
         onFocus={playPreview}
         onBlur={stopPreview}
         aria-label="Play original video"
-        className="group absolute top-40 right-4 w-40 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600 sm:w-48"
+        className="group absolute top-4 right-4 w-40 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600 sm:w-48"
       >
         <div className="relative aspect-video bg-gray-900">
           {videoStatus === 'stored' && videoUrl ? (
