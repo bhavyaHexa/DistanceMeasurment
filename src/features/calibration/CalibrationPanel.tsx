@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { useStores } from '@/hooks/useStores';
 import { calibrationMode } from '@/utils/calibrationModes';
-import { CalibrationModeSwitch } from './CalibrationModeSwitch';
 import { CalibrationPointRow } from './CalibrationPointRow';
 
 export const CalibrationPanel = observer(function CalibrationPanel() {
@@ -21,17 +20,12 @@ export const CalibrationPanel = observer(function CalibrationPanel() {
     >
       <PanelHeader
         title="Set scale"
-        description="Click two points whose real distance you know, then choose whether it is the absolute, horizontal, vertical or depth distance."
+        description="Click two points whose real distance you know, then enter the absolute distance between them."
       />
 
       <ol className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
         <CalibrationPointRow end="a" />
         <CalibrationPointRow end="b" />
-        {calibration.nextPoint === null && (
-          <li className="pt-2">
-            <CalibrationModeSwitch />
-          </li>
-        )}
         <li className="pt-2">
           <TextField
             label={`Real ${modeName} distance A → B`}
