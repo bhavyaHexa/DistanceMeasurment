@@ -10,7 +10,10 @@ function formatDuration(seconds: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-/** Small thumbnail of the original video over the viewport; opens the full player on click. */
+/**
+ * Small thumbnail of the original video over the viewport; opens the full player on click.
+ * Sits left of the axes gizmo, which SceneCanvas draws 64px in from the top-right corner.
+ */
 export const VideoPreview = observer(function VideoPreview() {
   const { project } = useStores();
   const [open, setOpen] = useState(false);
@@ -43,7 +46,7 @@ export const VideoPreview = observer(function VideoPreview() {
         onFocus={playPreview}
         onBlur={stopPreview}
         aria-label="Play original video"
-        className="group absolute top-4 right-4 w-40 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600 sm:w-48"
+        className="group absolute top-4 right-32 w-40 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600 sm:w-48"
       >
         <div className="relative aspect-video bg-gray-900">
           {videoStatus === 'stored' && videoUrl ? (
