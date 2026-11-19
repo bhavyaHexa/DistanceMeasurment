@@ -15,6 +15,15 @@ export const SaveStatus = observer(function SaveStatus({ className }: { classNam
       </span>
     );
   }
+  if (project.downloadError) {
+    return (
+      <span role="alert" title={project.downloadError} className={cn(base, 'text-red-700')}>
+        <AlertCircle aria-hidden className="size-4" />
+        Couldn't download
+      </span>
+    );
+  }
+  if (project.isDownloadingModel) return <span className={cn(base, 'text-gray-600')}>Preparing download…</span>;
   if (project.isSaving) return <span className={cn(base, 'text-gray-600')}>Saving…</span>;
   if (project.hasUnsavedChanges) {
     return (

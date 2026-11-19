@@ -15,10 +15,12 @@ interface MenuProps {
   triggerIcon: LucideIcon;
   triggerLabel: string;
   items: MenuItem[];
+  triggerSize?: 'sm' | 'md';
+  disabled?: boolean;
 }
 
 /** An icon button that opens a small list of actions. */
-export function Menu({ triggerIcon, triggerLabel, items }: MenuProps) {
+export function Menu({ triggerIcon, triggerLabel, items, triggerSize = 'sm', disabled = false }: MenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -29,7 +31,8 @@ export function Menu({ triggerIcon, triggerLabel, items }: MenuProps) {
       <IconButton
         icon={triggerIcon}
         label={triggerLabel}
-        size="sm"
+        size={triggerSize}
+        disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={(event) => {
@@ -37,7 +40,7 @@ export function Menu({ triggerIcon, triggerLabel, items }: MenuProps) {
           setOpen((value) => !value);
         }}
       />
-      {open && (
+      {open && !disabled && (
         <div
           role="menu"
           className="absolute top-full right-0 z-20 mt-1 min-w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
