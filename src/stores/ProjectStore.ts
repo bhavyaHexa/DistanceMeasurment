@@ -3,7 +3,8 @@ import { ApiError, errorMessage, isAbortError } from '@/services/http';
 import { runsApi } from '@/services/runsApi';
 import type { Health, RunDetail, RunStatus } from '@/types/api';
 import { SAVE_VERSION, type SavedMeasurementData } from '@/types/projectFile';
-import { downloadFromUrl, toFileStem } from '@/utils/download';
+import { downloadBlob, downloadFromUrl, toFileStem } from '@/utils/download';
+import { exportModel, type ModelFormat } from '@/utils/modelExport';
 import { buildProjectFile, parseProjectFile } from '@/utils/projectFile';
 import type { RootStore } from './RootStore';
 
@@ -68,6 +69,7 @@ export class ProjectStore {
   isSaving = false;
   saveError: string | null = null;
   isDownloadingModel = false;
+  downloadError: string | null = null;
   /** Set when an older save is open: its points are remapped once the model is oriented. */
   pendingFrameMigration = false;
   /** Incremented on every open so a superseded open never writes into the store. */
@@ -192,12 +194,23 @@ export class ProjectStore {
     return request;
   }
 
-  async downloadModel() {
-    const url = this.root.model.url;
+  async downloadModel(format: ModelFormat = 'glb') {
+    const { url, scene } = this.root.model;
     if (!url || this.isDownloadingModel) return;
+    const fileName = `${toFileStem(this.name)}.${format}`;
     this.isDownloadingModel = true;
+    this.downloadError = null;
     try {
-      await downloadFromUrl(`${toFileStem(this.name)}.glb`, url);
+      if (format === 'glb') {
+        await downloadFromUrl(fileName, url);
+      } else {
+        if (!scene) throw new Error('The 3D model is not loaded yet.');
+        downloadBlob(fileName, await exportModel(scene, format));
+      }
+    } catch (error) {
+      runInAction(() => {
+        this.downloadError = errorMessage(error, `Could not export the model as .${format}.`);
+      });
     } finally {
       runInAction(() => {
         this.isDownloadingModel = false;
@@ -366,6 +379,7 @@ export class ProjectStore {
     this.processingStage = null;
     this.processingProgress = null;
     this.saveError = null;
+    this.downloadError = null;
     this.savedSnapshot = null;
     this.pendingFrameMigration = false;
 

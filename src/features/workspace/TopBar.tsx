@@ -1,9 +1,9 @@
 import { observer } from 'mobx-react-lite';
-import { ChevronRight, Download } from 'lucide-react';
+import { Box, ChevronRight, Download, FileBox, Shapes } from 'lucide-react';
 import { Link } from 'react-router';
 import { LogoMark } from '@/components/Logo';
 import { Button } from '@/components/ui/Button';
-import { IconButton } from '@/components/ui/IconButton';
+import { Menu } from '@/components/ui/Menu';
 import { Select } from '@/components/ui/Select';
 import { useStores } from '@/hooks/useStores';
 import { UNITS } from '@/utils/units';
@@ -47,11 +47,16 @@ export const TopBar = observer(function TopBar() {
           />
         )}
         {workspace.step !== 'upload' && (
-          <IconButton
-            icon={Download}
-            label="Download 3D model (.glb)"
+          <Menu
+            triggerIcon={Download}
+            triggerLabel="Download 3D model"
+            triggerSize="md"
             disabled={!project.canDownloadModel}
-            onClick={project.downloadModel}
+            items={[
+              { label: 'GLB (.glb)', icon: Box, onSelect: () => void project.downloadModel('glb') },
+              { label: 'OBJ (.obj)', icon: FileBox, onSelect: () => void project.downloadModel('obj') },
+              { label: 'STL (.stl)', icon: Shapes, onSelect: () => void project.downloadModel('stl') },
+            ]}
           />
         )}
         <Button
