@@ -1,14 +1,15 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { ApiError, errorMessage, isAbortError } from '@/services/http';
 import { runsApi } from '@/services/runsApi';
-import type { Health, RunDetail, RunStatus } from '@/types/api';
+import type { Health, RunDetail, RunStatus, VideoStatus } from '@/types/api';
 import { SAVE_VERSION, type SavedMeasurementData } from '@/types/projectFile';
 import { downloadBlob, downloadFromUrl, toFileStem } from '@/utils/download';
 import { exportModel, type ModelFormat } from '@/utils/modelExport';
 import { buildProjectFile, parseProjectFile } from '@/utils/projectFile';
 import type { RootStore } from './RootStore';
 
-const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 5 * 1024 * 1024 * 1024;
+const VIDEO_TOO_LARGE = 'Video too large (max 5 GB).';
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.avi', '.wmv', '.mpg', '.mpeg']);
 const ACTIVE_RUN_KEY = 'itwin.activeRun';
 const POLL_INTERVAL_MS = 4000;
@@ -72,6 +73,11 @@ export class ProjectStore {
   downloadError: string | null = null;
   /** Set when an older save is open: its points are remapped once the model is oriented. */
   pendingFrameMigration = false;
+
+  videoStatus: VideoStatus | null = null;
+  videoUrl: string | null = null;
+  isLoadingVideo = false;
+  videoError: string | null = null;
   /** Incremented on every open so a superseded open never writes into the store. */
   private openCount = 0;
   /** Snapshot of the data at the last save/open, used to detect unsaved changes. */
@@ -158,6 +164,31 @@ export class ProjectStore {
       return { index: 2, percent: model.loadProgress, label: 'Loading the 3D model…' };
     }
     return null;
+  }
+
+  /**
+   * Fetches a fresh link to the original video (links expire). Called on demand only —
+   * the video is never polled for.
+   */
+  async refreshVideo() {
+    const runId = this.runId;
+    if (!runId || this.isLoadingVideo) return;
+    this.isLoadingVideo = true;
+    this.videoError = null;
+    try {
+      const run = await runsApi.get(runId);
+      runInAction(() => {
+        if (this.runId === runId) this.applyVideoDetails(run);
+      });
+    } catch (error) {
+      runInAction(() => {
+        if (this.runId === runId) this.videoError = errorMessage(error, 'Could not load the original video.');
+      });
+    } finally {
+      runInAction(() => {
+        if (this.runId === runId) this.isLoadingVideo = false;
+      });
+    }
   }
 
   get canDownloadModel(): boolean {
@@ -300,7 +331,7 @@ export class ProjectStore {
       return;
     }
     if (file.size > MAX_VIDEO_BYTES) {
-      this.uploadError = 'Video too large (max 300 MB).';
+      this.uploadError = VIDEO_TOO_LARGE;
       return;
     }
     if (!this.canUploadVideo) {
@@ -382,6 +413,10 @@ export class ProjectStore {
     this.downloadError = null;
     this.savedSnapshot = null;
     this.pendingFrameMigration = false;
+    this.videoStatus = null;
+    this.videoUrl = null;
+    this.isLoadingVideo = false;
+    this.videoError = null;
 
     const { ui, model, calibration, measurements, viewer, workspace, history } = this.root;
     ui.reset();
@@ -431,7 +466,10 @@ export class ProjectStore {
       if (isAbortError(error) || this.runId !== runId) return;
       runInAction(() => {
         this.uploadPhase = 'idle';
-        this.uploadError = errorMessage(error, 'Video upload failed. Please try again.');
+        this.uploadError =
+          error instanceof ApiError && error.status === 413
+            ? VIDEO_TOO_LARGE
+            : errorMessage(error, 'Video upload failed. Please try again.');
       });
     } finally {
       if (this.uploadAbort === abort) this.uploadAbort = null;
@@ -502,6 +540,12 @@ export class ProjectStore {
     this.uploadError = run.status === 'failed' ? run.error : null;
     this.processingStage = run.stage;
     this.processingProgress = run.progress;
+    this.applyVideoDetails(run);
+  }
+
+  private applyVideoDetails(run: RunDetail) {
+    this.videoStatus = run.video_status ?? null;
+    this.videoUrl = run.video_status === 'stored' ? run.video_url : null;
   }
 
   private saveActiveRun(active: boolean) {

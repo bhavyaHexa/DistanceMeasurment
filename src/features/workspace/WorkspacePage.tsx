@@ -9,6 +9,7 @@ import { SceneCanvas } from '@/features/scene/SceneCanvas';
 import { useWorkspacePage } from './hooks/useWorkspacePage';
 import { TopBar } from './TopBar';
 import { UploadPanel } from './UploadPanel';
+import { VideoPreview } from './VideoPreview';
 import { ViewportControls } from './ViewportControls';
 
 export const WorkspacePage = observer(function WorkspacePage() {
@@ -33,7 +34,14 @@ export const WorkspacePage = observer(function WorkspacePage() {
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <main className="relative min-h-[50dvh] min-w-0 flex-1 bg-canvas">
           <SceneCanvas />
-          {workspace.step === 'upload' ? <UploadPanel /> : <ViewportControls />}
+          {workspace.step === 'upload' ? (
+            <UploadPanel />
+          ) : (
+            <>
+              <ViewportControls />
+              <VideoPreview />
+            </>
+          )}
         </main>
         {workspace.step !== 'upload' && (
           <aside className="flex max-h-[50dvh] shrink-0 flex-col border-t border-gray-200 bg-white lg:max-h-none lg:w-[340px] lg:border-t-0 lg:border-l">

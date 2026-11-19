@@ -1,5 +1,8 @@
 export type RunStatus = 'created' | 'queued' | 'processing' | 'converted' | 'saved' | 'failed';
 
+/** State of the original video's copy in storage; null for runs made before it was kept. */
+export type VideoStatus = 'uploading' | 'stored' | 'failed';
+
 export interface RunSummary {
   run_id: string;
   project_name: string;
@@ -17,6 +20,9 @@ export interface RunDetail extends RunSummary {
   photo_count: number | null;
   glb_url: string | null;
   json_url: string | null;
+  video_status: VideoStatus | null;
+  /** Link to the original video; set only when `video_status` is 'stored', expires like `glb_url`. */
+  video_url: string | null;
   expires_in: number;
 }
 

@@ -85,7 +85,7 @@ export const UploadPanel = observer(function UploadPanel() {
             <Dropzone
               accept=".mp4,.mov,.avi,.wmv,.mpg,.mpeg"
               onFile={project.uploadFile}
-              hint="MP4, MOV, AVI, WMV, MPG or MPEG · max 300 MB"
+              hint="MP4, MOV, AVI, WMV, MPG or MPEG · max 5 GB"
               disabled={!project.canUploadVideo}
             />
             <div className="rounded-lg bg-blue-50 px-3 py-3 text-sm text-blue-900">
