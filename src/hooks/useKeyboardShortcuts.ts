@@ -8,10 +8,11 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * Workspace shortcuts: Esc cancels placement, Ctrl/⌘+Z undoes, Delete removes the selected
- * measurement, R / P switch rotate / pan, F fits the model in view.
+ * measurement, R / P switch rotate / pan, F fits the model in view, V / E / X pick the point / edge / face
+ * selection filter.
  */
 export function useKeyboardShortcuts() {
-  const { ui, history, measurements, viewer, workspace } = useStores();
+  const { ui, history, measurements, viewer, workspace, selection } = useStores();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -45,10 +46,22 @@ export function useKeyboardShortcuts() {
         case 'F':
           viewer.requestFit();
           break;
+        case 'v':
+        case 'V':
+          if (workspace.step === 'measure') selection.setFilter('point');
+          break;
+        case 'e':
+        case 'E':
+          if (workspace.step === 'measure') selection.setFilter('edge');
+          break;
+        case 'x':
+        case 'X':
+          if (workspace.step === 'measure') selection.setFilter('face');
+          break;
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [ui, history, measurements, viewer, workspace]);
+  }, [ui, history, measurements, viewer, workspace, selection]);
 }

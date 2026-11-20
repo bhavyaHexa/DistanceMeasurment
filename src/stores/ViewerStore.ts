@@ -84,6 +84,7 @@ export class ViewerStore {
     this.snapToEdges = true;
     this.hoverPoint = null;
     this.drag = null;
+    this.root.selection.reset();
   }
 
   private movePoint(target: DragTarget, point: Vec3) {

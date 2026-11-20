@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Vec3 } from '@/types/geometry';
 
 export type SnapKind = 'vertex' | 'edge' | 'surface';
 
@@ -75,37 +76,8 @@ export function findSnap(
   canvas: HTMLElement,
   root: THREE.Object3D,
 ): SnapResult | null {
-  const rect = canvas.getBoundingClientRect();
-  const meshes = meshesOf(root);
-
-  const castAt = (x: number, y: number) => {
-    _ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
-    _raycaster.setFromCamera(_ndc, camera);
-    return _raycaster.intersectObjects(meshes, false)[0];
-  };
-
-  const centerHit = castAt(clientX, clientY);
-  const cursorRay = _raycaster.ray.clone();
-
-  const hits = centerHit ? [centerHit] : [];
-  for (let i = 0; i < RING_SAMPLES; i++) {
-    const angle = (i / RING_SAMPLES) * Math.PI * 2;
-    const hit = castAt(
-      clientX + Math.cos(angle) * SNAP_RADIUS_PX,
-      clientY + Math.sin(angle) * SNAP_RADIUS_PX,
-    );
-    if (hit) hits.push(hit);
-  }
-
-  const toCandidate = (point: THREE.Vector3): Candidate | null => {
-    _projected.copy(point).project(camera);
-    if (_projected.z < -1 || _projected.z > 1) return null; // behind camera / outside frustum depth
-    const sx = ((_projected.x + 1) / 2) * rect.width + rect.left;
-    const sy = ((1 - _projected.y) / 2) * rect.height + rect.top;
-    const px = Math.hypot(sx - clientX, sy - clientY);
-    if (px > SNAP_RADIUS_PX) return null;
-    return { point, px, depth: cursorRay.origin.distanceTo(point) };
-  };
+  const { rect, centerHit, cursorRay, hits } = gatherHits(clientX, clientY, camera, canvas, root, true);
+  const toCandidate = (point: THREE.Vector3) => candidateAt(point, camera, rect, clientX, clientY, cursorRay);
 
   const vertices: Candidate[] = [];
   const edges: Candidate[] = [];
@@ -140,6 +112,129 @@ export function findSnap(
   if (edge) return { point: edge.point, kind: 'edge' };
   if (centerHit) return { point: centerHit.point.clone(), kind: 'surface' };
   return null;
+}
+
+interface Gathered {
+  rect: DOMRect;
+  /** Surface hit under the cursor itself. */
+  centerHit: THREE.Intersection | undefined;
+  /** The ray through the cursor. */
+  cursorRay: THREE.Ray;
+  /** The centre hit plus, with `ring`, the hits in a circle around the cursor. */
+  hits: THREE.Intersection[];
+}
+
+/** Casts a ray through the cursor and, with `ring`, a ring of rays around it. */
+function gatherHits(
+  clientX: number,
+  clientY: number,
+  camera: THREE.Camera,
+  canvas: HTMLElement,
+  root: THREE.Object3D,
+  ring: boolean,
+): Gathered {
+  const rect = canvas.getBoundingClientRect();
+  const meshes = meshesOf(root);
+
+  const castAt = (x: number, y: number) => {
+    _ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
+    _raycaster.setFromCamera(_ndc, camera);
+    return _raycaster.intersectObjects(meshes, false)[0];
+  };
+
+  const centerHit = castAt(clientX, clientY);
+  const cursorRay = _raycaster.ray.clone();
+
+  const hits = centerHit ? [centerHit] : [];
+  if (ring) {
+    for (let i = 0; i < RING_SAMPLES; i++) {
+      const angle = (i / RING_SAMPLES) * Math.PI * 2;
+      const hit = castAt(clientX + Math.cos(angle) * SNAP_RADIUS_PX, clientY + Math.sin(angle) * SNAP_RADIUS_PX);
+      if (hit) hits.push(hit);
+    }
+  }
+  return { rect, centerHit, cursorRay, hits };
+}
+
+/** `point` as a snap candidate, or null when it is farther than SNAP_RADIUS_PX from the cursor on screen. */
+function candidateAt(
+  point: THREE.Vector3,
+  camera: THREE.Camera,
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+  cursorRay: THREE.Ray,
+): Candidate | null {
+  _projected.copy(point).project(camera);
+  if (_projected.z < -1 || _projected.z > 1) return null; // behind camera / outside frustum depth
+  const sx = ((_projected.x + 1) / 2) * rect.width + rect.left;
+  const sy = ((1 - _projected.y) / 2) * rect.height + rect.top;
+  const px = Math.hypot(sx - clientX, sy - clientY);
+  if (px > SNAP_RADIUS_PX) return null;
+  return { point, px, depth: cursorRay.origin.distanceTo(point) };
+}
+
+/** The triangle under the cursor, as three world-space corners. */
+export function findFace(
+  clientX: number,
+  clientY: number,
+  camera: THREE.Camera,
+  canvas: HTMLElement,
+  root: THREE.Object3D,
+): [Vec3, Vec3, Vec3] | null {
+  const { centerHit } = gatherHits(clientX, clientY, camera, canvas, root, false);
+  if (!centerHit?.face) return null;
+  const [a, b, c] = triangleInWorld(centerHit);
+  return [a.toArray(), b.toArray(), c.toArray()];
+}
+
+/** Distance from point (px, py) to segment (ax, ay)-(bx, by), all in screen pixels. */
+function distanceToSegment2D(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSq = dx * dx + dy * dy;
+  const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+/**
+ * The mesh edge (triangle side) nearest the cursor on screen, as its two world-space ends. Looks
+ * at the triangle under the cursor and, near a silhouette or seam, the triangles just around it,
+ * so the line you are pointing at is the one picked.
+ */
+export function findEdge(
+  clientX: number,
+  clientY: number,
+  camera: THREE.Camera,
+  canvas: HTMLElement,
+  root: THREE.Object3D,
+): Vec3[] | null {
+  const { rect, centerHit, hits } = gatherHits(clientX, clientY, camera, canvas, root, true);
+
+  const toScreen = (point: THREE.Vector3): [number, number] => {
+    _projected.copy(point).project(camera);
+    return [((_projected.x + 1) / 2) * rect.width + rect.left, ((1 - _projected.y) / 2) * rect.height + rect.top];
+  };
+
+  let best: { px: number; a: THREE.Vector3; b: THREE.Vector3 } | null = null;
+  const seenFaces = new Set<string>();
+  for (const hit of hits) {
+    if (!hit.face) continue;
+    const key = `${hit.object.uuid}/${hit.faceIndex}/${hit.instanceId ?? ''}`;
+    if (seenFaces.has(key)) continue;
+    seenFaces.add(key);
+
+    const tri = triangleInWorld(hit);
+    const screen = tri.map(toScreen);
+    for (let i = 0; i < 3; i++) {
+      const j = (i + 1) % 3;
+      const px = distanceToSegment2D(clientX, clientY, screen[i][0], screen[i][1], screen[j][0], screen[j][1]);
+      // The hovered triangle always counts; adjacent ones only when their edge is close to the cursor.
+      if (hit !== centerHit && px > SNAP_RADIUS_PX) continue;
+      if (!best || px < best.px) best = { px, a: tri[i], b: tri[j] };
+    }
+  }
+  return best ? [best.a.toArray(), best.b.toArray()] : null;
 }
 
 function pickBest(candidates: Candidate[]): Candidate | null {

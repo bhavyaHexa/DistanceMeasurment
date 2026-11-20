@@ -100,6 +100,7 @@ export class WorkspaceStore {
   cancelInteraction() {
     this.root.measurements.cancelPlacing();
     this.root.viewer.setHoverPoint(null);
+    this.root.selection.cancel();
   }
 
   setDisplayUnit(unit: Unit) {

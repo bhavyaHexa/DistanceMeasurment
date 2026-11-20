@@ -8,6 +8,7 @@ import { MeasurementPanel } from '@/features/measurements/MeasurementPanel';
 import { SceneCanvas } from '@/features/scene/SceneCanvas';
 import { useWorkspacePage } from './hooks/useWorkspacePage';
 import { TopBar } from './TopBar';
+import { SelectionMenu } from './SelectionControls';
 import { UploadPanel } from './UploadPanel';
 import { VideoPreview } from './VideoPreview';
 import { ViewportControls } from './ViewportControls';
@@ -40,6 +41,7 @@ export const WorkspacePage = observer(function WorkspacePage() {
             <>
               <ViewportControls />
               <VideoPreview />
+              <SelectionMenu />
             </>
           )}
         </main>

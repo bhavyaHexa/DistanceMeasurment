@@ -4,6 +4,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { useStores } from '@/hooks/useStores';
 import type { HintTone } from '@/types/workspace';
 import { cn } from '@/utils/cn';
+import { SelectionInfo, SelectionToolbar } from './SelectionControls';
 
 const HINT_DOT: Record<HintTone, string> = {
   neutral: 'bg-gray-400',
@@ -19,36 +20,44 @@ export const ViewportControls = observer(function ViewportControls() {
 
   return (
     <>
-      <div
-        role="toolbar"
-        aria-label="View"
-        className="absolute top-4 left-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-      >
-        <IconButton
-          icon={Rotate3d}
-          label="Rotate (R)"
-          size="lg"
-          className="rounded-none"
-          active={viewer.viewTool === 'rotate'}
-          aria-pressed={viewer.viewTool === 'rotate'}
-          onClick={() => viewer.setViewTool('rotate')}
-        />
-        <IconButton
-          icon={Move}
-          label="Pan (P)"
-          size="lg"
-          className="rounded-none border-t border-gray-100"
-          active={viewer.viewTool === 'pan'}
-          aria-pressed={viewer.viewTool === 'pan'}
-          onClick={() => viewer.setViewTool('pan')}
-        />
-        <IconButton
-          icon={Maximize}
-          label="Fit to view (F)"
-          size="lg"
-          className="rounded-none border-t border-gray-100"
-          onClick={viewer.requestFit}
-        />
+      <div className="absolute top-4 left-4 flex max-h-[calc(100%-6rem)] flex-col items-start gap-2">
+        <div
+          role="toolbar"
+          aria-label="View"
+          className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+        >
+          <IconButton
+            icon={Rotate3d}
+            label="Rotate (R)"
+            size="lg"
+            className="rounded-none"
+            active={viewer.viewTool === 'rotate'}
+            aria-pressed={viewer.viewTool === 'rotate'}
+            onClick={() => viewer.setViewTool('rotate')}
+          />
+          <IconButton
+            icon={Move}
+            label="Pan (P)"
+            size="lg"
+            className="rounded-none border-t border-gray-100"
+            active={viewer.viewTool === 'pan'}
+            aria-pressed={viewer.viewTool === 'pan'}
+            onClick={() => viewer.setViewTool('pan')}
+          />
+          <IconButton
+            icon={Maximize}
+            label="Fit to view (F)"
+            size="lg"
+            className="rounded-none border-t border-gray-100"
+            onClick={viewer.requestFit}
+          />
+        </div>
+        {workspace.step === 'measure' && (
+          <>
+            <SelectionToolbar />
+            <SelectionInfo />
+          </>
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col-reverse items-center gap-2 sm:inset-x-4 sm:bottom-4 sm:flex-row sm:items-end">

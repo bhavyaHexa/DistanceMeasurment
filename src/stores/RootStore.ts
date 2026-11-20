@@ -5,6 +5,7 @@ import { ModelStore } from './ModelStore';
 import { NewProjectFormStore } from './NewProjectFormStore';
 import { ProjectsListStore } from './ProjectsListStore';
 import { ProjectStore } from './ProjectStore';
+import { SelectionStore } from './SelectionStore';
 import { UIStore } from './UIStore';
 import { ViewerStore } from './ViewerStore';
 import { WorkspaceStore } from './WorkspaceStore';
@@ -20,4 +21,5 @@ export class RootStore {
   readonly calibration = new CalibrationStore(this);
   readonly measurements = new MeasurementStore(this);
   readonly viewer = new ViewerStore(this);
+  readonly selection = new SelectionStore(this);
 }
