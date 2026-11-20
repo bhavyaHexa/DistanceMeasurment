@@ -1,6 +1,7 @@
 import { Html } from '@react-three/drei';
 import type { Vec3 } from '@/types/geometry';
 import { cn } from '@/utils/cn';
+import { HTML_PASS_THROUGH } from './htmlPassThrough';
 
 interface ValueLabelProps {
   position: Vec3;
@@ -11,7 +12,7 @@ interface ValueLabelProps {
 
 export function ValueLabel({ position, color, text, emphasized = false }: ValueLabelProps) {
   return (
-    <Html position={position} center pointerEvents="none" zIndexRange={[80, 0]}>
+    <Html position={position} center style={HTML_PASS_THROUGH} zIndexRange={[80, 0]}>
       <span
         className={cn(
           'block rounded-md px-2 py-1 text-[13px] font-semibold whitespace-nowrap text-white tabular-nums shadow',

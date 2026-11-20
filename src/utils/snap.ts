@@ -33,6 +33,28 @@ interface FeatureSet {
   vertices: Set<string>;
 }
 const featureCache = new WeakMap<THREE.BufferGeometry, FeatureSet>();
+const meshCache = new WeakMap<THREE.Object3D, THREE.Mesh[]>();
+
+/** The model's meshes, collected once: the scene graph is static, so don't re-walk it on every pointer move. */
+function meshesOf(root: THREE.Object3D): THREE.Mesh[] {
+  let meshes = meshCache.get(root);
+  if (!meshes) {
+    meshes = [];
+    root.traverseVisible((obj) => {
+      if ((obj as THREE.Mesh).isMesh) meshes!.push(obj as THREE.Mesh);
+    });
+    meshCache.set(root, meshes);
+  }
+  return meshes;
+}
+
+/**
+ * Builds the snap data up front. Finding feature edges walks every triangle of the mesh, which
+ * stalls the page for a moment if it first happens while the user is moving the cursor.
+ */
+export function warmSnapCache(root: THREE.Object3D) {
+  for (const mesh of meshesOf(root)) featuresOf(mesh.geometry);
+}
 
 interface Candidate {
   point: THREE.Vector3;
@@ -54,10 +76,7 @@ export function findSnap(
   root: THREE.Object3D,
 ): SnapResult | null {
   const rect = canvas.getBoundingClientRect();
-  const meshes: THREE.Object3D[] = [];
-  root.traverseVisible((obj) => {
-    if ((obj as THREE.Mesh).isMesh) meshes.push(obj);
-  });
+  const meshes = meshesOf(root);
 
   const castAt = (x: number, y: number) => {
     _ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);

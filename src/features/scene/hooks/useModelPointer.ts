@@ -29,16 +29,31 @@ export function useModelPointer() {
   useEffect(() => {
     const canvas = gl.domElement;
     let press: Press | null = null;
+    /** Latest pointer position awaiting a hover pick; picks run at most once per frame. */
+    let pendingMove: PointerEvent | null = null;
+    let frame = 0;
 
     const pick = (event: PointerEvent): Vec3 | null =>
       model.scene ? pickModelPoint(event.clientX, event.clientY, camera, canvas, model.scene, viewer.snapToEdges) : null;
 
-    const onMove = (event: PointerEvent) => {
-      if (viewer.isDragging || !workspace.isPlacingPoint) return viewer.setHoverPoint(null);
-      viewer.setHoverPoint(pick(event));
+    const clearHover = () => {
+      pendingMove = null;
+      if (viewer.hoverPoint) viewer.setHoverPoint(null);
     };
 
-    const onLeave = () => viewer.setHoverPoint(null);
+    const onMove = (event: PointerEvent) => {
+      // A held button means the camera is orbiting/panning: skip the raycasts so it stays smooth.
+      if (event.buttons !== 0 || viewer.isDragging || !workspace.isPlacingPoint) return clearHover();
+      pendingMove = event;
+      frame ||= requestAnimationFrame(() => {
+        frame = 0;
+        const move = pendingMove;
+        pendingMove = null;
+        if (move) viewer.setHoverPoint(pick(move));
+      });
+    };
+
+    const onLeave = clearHover;
 
     const onDown = (event: PointerEvent) => {
       if (event.button !== 0 || !workspace.isPlacingPoint) return;
@@ -68,6 +83,7 @@ export function useModelPointer() {
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onCancel);
     return () => {
+      cancelAnimationFrame(frame);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerleave', onLeave);
       canvas.removeEventListener('pointerdown', onDown);

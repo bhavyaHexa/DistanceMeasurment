@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useProgress } from '@react-three/drei';
 import type * as THREE from 'three';
 import { useStores } from '@/hooks/useStores';
+import { warmSnapCache } from '@/utils/snap';
 import { disposeObject3D, legacyPointRemap, makeMatte, placeOnGround } from '@/utils/three';
 
 /**
@@ -31,6 +32,11 @@ export function useModelSetup(scene: THREE.Object3D) {
     makeMatte(scene);
     model.setLoaded(scene, placeOnGround(scene));
     viewer.requestFit();
-    return () => disposeObject3D(scene);
+    // Do the one-off snap preprocessing while idle, not on the user's first hover.
+    const warm = window.setTimeout(() => warmSnapCache(scene), 300);
+    return () => {
+      window.clearTimeout(warm);
+      disposeObject3D(scene);
+    };
   }, [scene, model, viewer, project, measurements, calibration]);
 }

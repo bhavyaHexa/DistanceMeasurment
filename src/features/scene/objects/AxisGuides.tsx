@@ -2,6 +2,7 @@ import { Html, Line } from '@react-three/drei';
 import type { Axis, Vec3 } from '@/types/geometry';
 import { axisLegs, midpoint } from '@/utils/geometry';
 import { AXIS_COLORS } from '@/utils/measureColors';
+import { HTML_PASS_THROUGH } from './htmlPassThrough';
 
 /** Dashed, labelled guides showing the per-axis components of segment a→b. */
 export function AxisGuides({
@@ -34,7 +35,7 @@ export function AxisGuides({
               depthTest={false}
               renderOrder={emphasized ? 999 : 997}
             />
-            <Html position={midpoint(from, to)} center pointerEvents="none" zIndexRange={[70, 0]}>
+            <Html position={midpoint(from, to)} center style={HTML_PASS_THROUGH} zIndexRange={[70, 0]}>
               <span
                 className={
                   emphasized

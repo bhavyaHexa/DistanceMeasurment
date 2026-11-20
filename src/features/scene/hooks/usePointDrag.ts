@@ -19,12 +19,26 @@ export function usePointDrag(target: DragTarget, position: Vec3) {
     event.stopPropagation();
     viewer.startDrag(target, position);
 
-    const onMove = (move: PointerEvent) => {
-      if (!model.scene) return;
-      const point = pickModelPoint(move.clientX, move.clientY, camera, gl.domElement, model.scene, viewer.snapToEdges);
+    let pendingMove: PointerEvent | null = null;
+    let frame = 0;
+    const applyPending = () => {
+      const latest = pendingMove;
+      pendingMove = null;
+      if (!latest || !model.scene) return;
+      const point = pickModelPoint(latest.clientX, latest.clientY, camera, gl.domElement, model.scene, viewer.snapToEdges);
       if (point) viewer.dragTo(point);
     };
+    // Pointer events can outpace the screen; resolve only the latest position once per frame.
+    const onMove = (move: PointerEvent) => {
+      pendingMove = move;
+      frame ||= requestAnimationFrame(() => {
+        frame = 0;
+        applyPending();
+      });
+    };
     const onEnd = () => {
+      cancelAnimationFrame(frame);
+      applyPending(); // keep the final position if the release beat the next frame
       stopDrag.current = null;
       viewer.endDrag();
       gl.domElement.removeEventListener('pointermove', onMove);
